@@ -7,14 +7,14 @@ end
 
 module HashValue = struct
   type t = (int*int) list
-  let format d = ()
+  let format _ = ()
 end
 
 module FileDict = HashtblDict (StringKey)(HashValue)
 
 module DictValue = struct
   type t = FileDict.t
-  let format d = ()
+  let format _ = ()
 end
 
 module CompDict = HashtblDict (StringKey)(DictValue)
@@ -38,7 +38,7 @@ let make_pair_comp k0 file_list =
 
 let compare d =
   let file_list = FileDict.to_list d in
-  List.fold_left (fun x (k,v) ->
+  List.fold_left (fun x (k,_) ->
       CompDict.insert k (make_pair_comp k file_list) x)
     CompDict.empty file_list
 

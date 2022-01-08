@@ -1,5 +1,7 @@
 (test
  (name OCaMoss)
- (libraries OCaMossLib ounit2)
- )
-
+ (libraries OCaMossLib ounit2))
+(env
+  (_
+    (env-vars 
+      (LANGUAGE_FILES_PATH "../../../language_files/"))))

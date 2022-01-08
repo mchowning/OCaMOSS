@@ -18,10 +18,12 @@ type language_info = {
 }
 
 let get_language_info language_file = 
-  let path_to_language_file =
-    (* FIXME hack to get the path to work in the tests *)
-    (* String.concat "/" ["language_files"; language_file] in *)
-    String.concat "/" ["../../../language_files"; language_file] in
+  (* FIXME THIS ISN'T WORKING *)
+  let language_files_path = try
+    Sys.getenv "LANGUAGE_FILES_PATH"
+  with
+   | Not_found -> "language_files/" in
+  let path_to_language_file = language_files_path ^ language_file in
   let json = Yojson.Basic.from_file path_to_language_file in
   let keywords_list = json |> member "keywords"
                       |> to_list |> List.map to_string in

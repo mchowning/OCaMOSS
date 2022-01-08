@@ -3,5 +3,7 @@
  (libraries ANSITerminal core unix yojson)
  )
 (env
-  (dev
-    (flags (:standard -warn-error -A))))
+  (_
+    (flags (:standard -warn-error -A))
+    (env-vars 
+      (LANGUAGE_FILES_PATH "../language_files/"))))

@@ -2,3 +2,8 @@
  (public_name OCaMoss)
  (name main)
  (libraries OCaMossLib))
+
+(env
+  (_
+    (env-vars 
+      (LANGUAGE_FILES_PATH "../language_files/"))))

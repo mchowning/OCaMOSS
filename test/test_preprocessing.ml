@@ -178,6 +178,10 @@ let ocaml_info = get_language_info "ocaml_info.json"
 let java_info = get_language_info "java_info.json"
 
 let tests = [
+  (* "big_file" >:: (fun _ -> assert_string begin
+    let _ = hash_file "../../../test/big_file.java" in
+    "successfully hashed a big file"
+    end); *)
   "k_grams_2" >:: (fun _ -> assert_equal (k_grams "test" 3) ["tes"; "est"]);
   "k_grams_1" >:: (fun _ -> assert_equal (k_grams "Hello World" 5)
                       ["Hello"; "ello "; "llo W"; "lo Wo"; "o Wor"; " Worl"; "World"]);
