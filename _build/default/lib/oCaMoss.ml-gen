@@ -1,0 +1,18 @@
+(** @canonical OCaMoss.Comparison *)
+module Comparison = OCaMoss__Comparison
+
+
+(** @canonical OCaMoss.Dictionary *)
+module Dictionary = OCaMoss__Dictionary
+
+
+(** @canonical OCaMoss.Libmain *)
+module Libmain = OCaMoss__Libmain
+
+
+(** @canonical OCaMoss.Preprocessing *)
+module Preprocessing = OCaMoss__Preprocessing
+
+
+(** @canonical OCaMoss.Winnowing *)
+module Winnowing = OCaMoss__Winnowing

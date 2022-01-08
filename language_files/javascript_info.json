@@ -1,0 +1,21 @@
+{
+  "keywords": ["abstract", "arguments", "as", "async", "await", "boolean", "break", "byte", "case",
+    "catch", "char", "class", "const", "continue", "debugger", "default", "delete",	"do",
+    "double",	"else",	"enum",	"eval", "export",	"extends", "false",	"final", "finally",
+    "float", "for",	"function", "goto",	"if",	"implements",	"import", "in",	"instanceof",
+    "int", "interface", "let", "long", "native", "new", "null",	"package", "private",
+    "protected", "public", "return", "short",	"static", "super", "switch", "synchronized",
+    "this", "throw", "throws", "transient", "true", "try", "typeof", "var", "void", "volatile",
+    "while", "with", "yield",
+
+    "any", "constructor", "declare", "from", "get", "module", "of","namespace", "number", "require", "set", "string", "symbol", 
+    "type"],
+  "special characters": ["!", "$", "%", "&", "*", "+", "-", ".", "/", ":", ";",
+    "<", "=", ">", "?", "^", "|",  "\"", "'", "(", ")", ",", "[", "]",
+    "{", "}", "~", "@"],
+  "comment-start" : "/*",
+  "comment-end" : "*/",
+  "comment": "//",
+  "comments-nest": false,
+  "strings":false
+}

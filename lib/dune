@@ -1,0 +1,7 @@
+(library
+ (name OCaMoss)
+ (libraries ANSITerminal core unix yojson)
+ )
+(env
+  (dev
+    (flags (:standard -warn-error -A))))
