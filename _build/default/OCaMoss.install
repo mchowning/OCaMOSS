@@ -1,8 +1,0 @@
-lib: [
-  "_build/install/default/lib/OCaMoss/META"
-  "_build/install/default/lib/OCaMoss/dune-package"
-  "_build/install/default/lib/OCaMoss/opam"
-]
-bin: [
-  "_build/install/default/bin/OCaMoss"
-]

@@ -19,7 +19,9 @@ type language_info = {
 
 let get_language_info language_file = 
   let path_to_language_file =
-    String.concat "/" ["language_files"; language_file] in
+    (* FIXME hack to get the path to work in the tests *)
+    (* String.concat "/" ["language_files"; language_file] in *)
+    String.concat "/" ["../../../language_files"; language_file] in
   let json = Yojson.Basic.from_file path_to_language_file in
   let keywords_list = json |> member "keywords"
                       |> to_list |> List.map to_string in
@@ -238,12 +240,12 @@ let remove_noise comment_info code_string keywords spec_chars is_txt =
     code_string 
     |> rm_strings
     |> rm_mult_line_comment 
-    (* |> rm_one_line_comment  *)
-    (* |> split_and_keep_on_spec_chars spec_chars  *)
-    (* |> List.map rem_white_space  *)
-    (* |> List.flatten  *)
-    (* |> replace_generics keywords spec_chars  *)
-    (* |> String.concat "" *)
+    |> rm_one_line_comment
+    |> split_and_keep_on_spec_chars spec_chars 
+    |> List.map rem_white_space 
+    |> List.flatten 
+    |> replace_generics keywords spec_chars 
+    |> String.concat ""
 
 (* Refer to preprocessing.mli for this function's specifications *)
 let k_grams s k =

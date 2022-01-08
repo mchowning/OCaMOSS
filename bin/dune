@@ -1,4 +1,4 @@
 (executable
  (public_name OCaMoss)
  (name main)
- (libraries OCaMoss))
+ (libraries OCaMossLib))

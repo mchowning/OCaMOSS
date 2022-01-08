@@ -1,2 +1,5 @@
 (test
- (name OCaMoss))
+ (name OCaMoss)
+ (libraries OCaMossLib ounit2)
+ )
+
