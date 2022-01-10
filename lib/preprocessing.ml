@@ -18,7 +18,7 @@ type language_info = {
 }
 
 let get_language_info language_file = 
-  (* FIXME THIS ISN'T WORKING *)
+  (* Using this environment variable in tests because I need a different path there it seems *)
   let language_files_path = try
     Sys.getenv "LANGUAGE_FILES_PATH"
   with
@@ -105,37 +105,14 @@ let split_and_keep_on_spec_chars spec_chars str =
  * [split_on_str "Hello" [] "HelloWorldHelloWorldHello" =
  * ["Hello"; "World"; "Hello"; "World"; "Hello"]
 *)
-let rec split_on_str str_to_split_on acc_str_arr str_to_split =
-  let str_to_split_on_len = String.length str_to_split_on in
-  let str_to_split_len = String.length str_to_split in
-  let new_acc_arr_else_case acc_str_arr str_to_split_on str_to_add =
-    match acc_str_arr with
-    | [] -> [str_to_add]
-    | h::t ->
-      if h = str_to_split_on then str_to_add::acc_str_arr
-      else
-        let new_acc_arr_hd = String.concat "" [h; str_to_add] in
-        new_acc_arr_hd::t
-  in
-  if String.length str_to_split = 0 then List.rev acc_str_arr
-  else
-    try
-      if str_to_split_on = (String.sub str_to_split 0 str_to_split_on_len) then
-        let head_str = str_to_split_on in
-        let tail_len = str_to_split_len - str_to_split_on_len in
-        let tail_str = String.sub str_to_split str_to_split_on_len tail_len in
-        split_on_str str_to_split_on (head_str::acc_str_arr)tail_str
-      else
-        let head_str = String.sub str_to_split 0 1 in
-        let tail_len = str_to_split_len - 1 in
-        let tail_str = String.sub str_to_split 1 tail_len in
-        let new_acc_arr =
-          new_acc_arr_else_case acc_str_arr str_to_split_on head_str in
-        split_on_str str_to_split_on new_acc_arr tail_str
-    with Invalid_argument _ ->
-      let new_acc_arr =
-        new_acc_arr_else_case acc_str_arr str_to_split_on str_to_split in
-      List.rev new_acc_arr
+let split_on_str str_to_split_on str_to_split =
+  let re = Str.regexp (Str.quote str_to_split_on) in
+  let split = Str.full_split re str_to_split in
+  List.map (function 
+    | Str.Text s -> s
+    | Delim s -> s
+  ) split
+
 
 (* [remove_strings code_str], when treating [code_str] as a block of code,
  * removes all instances of strings in code_str.
@@ -153,7 +130,7 @@ let remove_strings code_str =
     if start then (" s "::acc_arr, start)
     else (" "::str::acc_arr, false)
   in
-  let split_on_strings_arr = split_on_str "\"" [] code_str in
+  let split_on_strings_arr = split_on_str "\"" code_str in
   let acc_tup =
     List.fold_left filter_from_arr ([], false) split_on_strings_arr in
   match acc_tup with
@@ -182,8 +159,8 @@ let remove_comments
     else (" "::str::acc_arr, 0)
   in
   let split_on_comments_arr =
-    split_on_str comment_start [] code_str |>
-    List.map (split_on_str comment_end []) |> List.flatten
+    split_on_str comment_start code_str |>
+    List.map (split_on_str comment_end) |> List.flatten
   in
   let acc_tup =
     List.fold_left do_filter_from_arr ([], 0) split_on_comments_arr in
@@ -238,7 +215,6 @@ let remove_noise comment_info code_string keywords spec_chars is_txt =
       if comment_info.strings then remove_strings s |> String.concat ""
       else s
     in
-    (* rm_strings code_string  *)
     code_string 
     |> rm_strings
     |> rm_mult_line_comment 
@@ -259,24 +235,11 @@ let k_grams s k =
     with Invalid_argument _ -> List.rev acc
   in
   k_grams_helper [] s k
-  (* [] *)
 
 (* [determine_language_file f] returns the string that represents the name of
  * of the json file that contains all relevant information about the language
  * that the code in the file named [f] is written in.
 *)
-(* let determine_language_file f =
-  if check_suffix f "txt" then "txt_info.json"
-  else if check_suffix f "ml" then "ocaml_info.json"
-  else if check_suffix f "mli" then "ocaml_info.json"
-  else if check_suffix f "c" then "c_info.json"
-  else if check_suffix f "cpp" then "cpp_info.json"
-  else if check_suffix f "java" then "java_info.json"
-  else if check_suffix f "js" then "javascript_info.json"
-  else if check_suffix f "ts" then "javascript_info.json" (* typescript keywords are included in the javascript file *)
-  else if check_suffix f "py" then "python_info.json"
-  else failwith "This file format is not supported" *)
-
 let determine_language_file f =
   if check_suffix f "txt" then Some "txt_info.json"
   else if check_suffix f "ml" then Some "ocaml_info.json"
@@ -312,89 +275,35 @@ let determine_language f =
           Some { info = info; language_file = language_file; file = f }
         )
       )
-      (* let lang = { info = info; language_file = lang_file; file = f } in *)
-      (* Some lang) *)
-  (* { info = List.assoc_opt (extension f) language_info_assoc_list;
-    language_file = determine_language_file f;
-    file = f } *)
 
-(* let rec hash_helper f_channel s =
-  try
-    let line = input_line f_channel in
-    hash_helper f_channel (s^line^"\n")
-  with
-  | End_of_file -> s *)
 let get_ngrams f n = 
 
   match (determine_language f) with
   | None -> None
   | Some language ->
-  (* match (determine_language_file f) with
-  | None -> None
-  | Some language_file ->
-    let language_info = get_language_info language_file in *)
     let keywords = language.info.keywords in
     let spec_chars = language.info.special_chars in
-    Printf.printf "\n\nBefore file read\n%!";
+    (* Printf.printf "\n\nBefore file read\n%!"; *)
     let f_channel = open_in f in
-    (* let f_string = hash_helper f_channel language_file in *)
-    (* let f_string = hash_helper f_channel language.language_file in *)
-    (* let f_string = hash_helper f_channel "" in *)
     let f_string = really_input_string f_channel (in_channel_length f_channel) in
     close_in f_channel;
     (* let f_string = hash_helper (open_in f) language_file in *)
     let is_txt = check_suffix f "txt" in
     let com_info = language.info.comment_info in
-    Printf.printf "Before remove_noise\n%!";
+    (* Printf.printf "Before remove_noise\n%!"; *)
     let noise_removed_str =
       remove_noise com_info f_string keywords spec_chars is_txt in
-    Printf.printf "Before k_grams\n%!";
+    (* Printf.printf "Before k_grams\n%!"; *)
     let result = Some (k_grams noise_removed_str n) in
-    Printf.printf "After k_grams\n%!";
+    (* Printf.printf "After k_grams\n%!"; *)
     result
-
-
-
-  (* bind (determine_language_file f) (fun language_file ->
-    let language_info = get_language_info language_file in
-    let keywords = language_info.keywords in
-    let spec_chars = language_info.special_chars in
-    let f_string = hash_helper (open_in f) language_file in
-    let is_txt = check_suffix f "txt" in
-    let com_info = language_info.comment_info in
-    let noise_removed_str =
-      remove_noise com_info f_string keywords spec_chars is_txt in
-    k_grams noise_removed_str n
-  ) *)
-
-  (* let language_file = determine_language_file f in
-  let language_info = get_language_info language_file in
-  let keywords = language_info.keywords in
-  let spec_chars = language_info.special_chars in
-  let f_string = hash_helper (open_in f) language_file in
-  let is_txt = check_suffix f "txt" in
-  let com_info = language_info.comment_info in
-  let noise_removed_str =
-    remove_noise com_info f_string keywords spec_chars is_txt in
-  k_grams noise_removed_str n *)
 
 (* Refer to preprocessing.mli for this function's specifications *)
 let hash_file f = begin
-  (* get_ngrams f 35; *)
-
-  let f_channel = open_in f in
-  let f_string = really_input_string f_channel (in_channel_length f_channel) in
-  close_in f_channel;
-  print_endline "before";
-  let _ = split_on_str "//" [] f_string in
-  print_endline "after";
-
-    (* let f_channel = open_in f in
-    hash_helper f_channel "";
-    close_in f_channel; *)
-
-  None;
-end
+  match (get_ngrams f 35) with
+  | None -> None
+  | Some n_grams -> Some (List.map (Hashtbl.hash) n_grams)
+  end
 
 (* Refer to preprocessing.mli for this function's specifications *)
 let rec get_file_positions dir dir_name filename positions =
@@ -413,32 +322,6 @@ let rec get_file_positions dir dir_name filename positions =
         List.sort (fun a b ->
             Stdlib.compare (snd a |> Hashtbl.hash) (snd b |> Hashtbl.hash)
           ) results
-      (* let n_grams = get_ngrams f 35 in *)
-      (* let results = List.map (fun x ->
-          (string_of_int x, List.nth n_grams (x - 1))
-        ) positions in
-      List.sort (fun a b ->
-          Stdlib.compare (snd a |> Hashtbl.hash) (snd b |> Hashtbl.hash)
-        ) results *)
     end
   with
   | _ -> []
-
-
-(* let rec get_file_positions dir dir_name filename positions =
-  try
-    let f_name = Unix.readdir dir in
-    if f_name <> filename then get_file_positions dir dir_name filename
-        positions
-    else begin
-      let f = dir_name ^ Filename.dir_sep ^ f_name in
-      let n_grams = get_ngrams f 35 in
-      let results = List.map (fun x ->
-          (string_of_int x, List.nth n_grams (x - 1))
-        ) positions in
-      List.sort (fun a b ->
-          Stdlib.compare (snd a |> Hashtbl.hash) (snd b |> Hashtbl.hash)
-        ) results
-    end
-  with
-  | _ -> [] *)

@@ -308,7 +308,7 @@ let parse_dir dir_name =
       end
       else
         let full_path = dir_name ^ Filename.dir_sep ^ f_name in
-        Printf.printf "Parsing %s\n%!" full_path;
+        (* Printf.printf "Parsing %s\n%!" full_path; *)
         let kind = (Unix.stat full_path).st_kind in
         if kind == S_DIR
         then begin
@@ -320,8 +320,8 @@ let parse_dir dir_name =
         end
         else begin
           let full_path = dir_name ^ Filename.dir_sep ^ f_name in
-          (* Printf.printf "%s\n" full_path; *)
-          (* Printf.printf "entering file\n"; *)
+          (* Printf.printf "%s\n%!" full_path; *)
+          (* Printf.printf "entering file\n%!"; *)
 
           (* REMOVE ME AND UNCOMMENT BELOW *)
           (* parse_dir' dir dict dir_name *)
@@ -357,7 +357,7 @@ let libmain_func () =
   end in
   Arg.parse speclist anon_arg_fun usage_msg;
 
-  (* try
+  try
     (* Printf.printf "\n\nneedle_dir: %s\n" !needle_dir; *)
     (* Printf.printf "count before: %i\n%!" !count; *)
     let needle_files = parse_dir !needle_dir in
@@ -367,4 +367,4 @@ let libmain_func () =
   | e -> 
       Printf.printf "Count: %i\n" !count;
       Printf.printf "Error: %s\n" (Printexc.to_string e);
-      Printf.printf "Backtrace: %s\n" (Printexc.get_backtrace ()); *)
+      Printf.printf "Backtrace: %s\n" (Printexc.get_backtrace ());

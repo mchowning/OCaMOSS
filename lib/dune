@@ -1,9 +1,9 @@
 (library
  (name OCaMossLib)
- (libraries ANSITerminal core unix yojson)
+ (libraries ANSITerminal core str unix yojson)
  )
 (env
-  (_
+  (dev
     (flags (:standard -warn-error -A))
     (env-vars 
       (LANGUAGE_FILES_PATH "../language_files/"))))

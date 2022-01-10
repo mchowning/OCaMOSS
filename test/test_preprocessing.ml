@@ -203,73 +203,89 @@ let tests = [
 
   "remove_noise" >::
   (fun _ -> assert_equal
+      ~printer:(fun s -> s)
+      expected_res_str
       (remove_noise
          ocaml_comments_info
          test_fun_str
          ocaml_keywords ocaml_spec_chars
          false)
-      expected_res_str);
+      );
 
   "remove_noise_3" >::
   (fun _ -> assert_equal
+      ~printer:(fun s -> s)
+      expected_res_str3
       (remove_noise
          ocaml_comments_info
          test_fun_str3
          ocaml_keywords ocaml_spec_chars
          false)
-      expected_res_str3);
+      );
 
   "remove_noise_4" >::
   (fun _ -> assert_equal
+      ~printer:(fun s -> s)
+      expected_res_str4
       (remove_noise
          ocaml_comments_info
          test_fun_str4
          ocaml_keywords ocaml_spec_chars
          false)
-      expected_res_str4);
+      );
 
   "remove_noise_5" >::
   (fun _ -> assert_equal
+      ~printer:(fun s -> s)
+      expected_res_str5
       (remove_noise
          java_comments_info
          test_fun_str5
          java_keywords java_spec_chars
          false)
-      expected_res_str5);
+      );
 
   "remove_noise_6" >::
   (fun _ -> assert_equal
+      ~printer:(fun s -> s)
+      expected_res_str6
       (remove_noise
          java_comments_info
          test_fun_str6
          java_keywords java_spec_chars
          false)
-      expected_res_str6);
+      );
 
   "remove_noise_7" >::
   (fun _ -> assert_equal
+      ~printer:(fun s -> s)
+      "v<=v"
       (remove_noise
          java_comments_info
          "abc<=def"
          java_keywords java_spec_chars
          false)
-      "v<=v");
+     );
 
   "remove_noise_8" >::
   (fun _ -> assert_equal
+      ~printer:(fun s -> s)
+      "letv=vinletv=5inv"
       (remove_noise
          ocaml_comments_info
          "let x = \"(*\" in let y = 5 in \"*)\""
          ocaml_keywords ocaml_spec_chars
          false)
-      "letv=vinletv=5inv");
+      );
 
   "remove_noise_9" >::
   (fun _ -> assert_equal
+      ~printer:(fun s -> s)
+      "letv=v"
       (remove_noise
          ocaml_comments_info
          "let x = 'y'"
          ocaml_keywords ocaml_spec_chars
          false)
-      "letv=v");
+      );
 ]
