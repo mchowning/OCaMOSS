@@ -238,15 +238,12 @@ let remove_noise comment_info code_string keywords spec_chars is_txt =
 
 (* Refer to preprocessing.mli for this function's specifications *)
 let rec k_grams s n =
-  let rec k_grams_helper s n i =
-    if String.length s < n + i
+  let rec k_grams_helper s index n =
+    if String.length s < n + index
     then []
-    else begin
-      let n_sub_str = String.sub s i n in
-      n_sub_str :: k_grams_helper s n (i+1)
-    end
+    else String.sub s index n :: k_grams_helper s (index+1) n
   in
-  k_grams_helper s n 0
+  k_grams_helper s 0 n
 
 
 (* [determine_language_file f] returns the string that represents the name of
