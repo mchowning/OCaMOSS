@@ -260,6 +260,7 @@ let determine_language_file f =
   else if check_suffix f "c" then Some "c_info.json"
   else if check_suffix f "cpp" then Some "cpp_info.json"
   else if check_suffix f "java" then Some "java_info.json"
+  else if check_suffix f "min.js" then None
   else if check_suffix f "js" then Some "javascript_info.json"
   else if check_suffix f "ts" then Some "javascript_info.json" (* typescript keywords are included in the javascript file *)
   else if check_suffix f "py" then Some "python_info.json"
