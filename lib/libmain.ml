@@ -303,7 +303,7 @@ let parse_dir dir_name =
       let f_name = Unix.readdir dir in
       if String.get f_name 0 = '.'
       then begin
-        (* Printf.printf "skipping %s\n" f_name; *)
+        (* Printf.printf "skipping %s\n%!" f_name; *)
         parse_dir' dir dict dir_name 
       end
       else
@@ -312,7 +312,7 @@ let parse_dir dir_name =
         let kind = (Unix.stat full_path).st_kind in
         if kind == S_DIR
         then begin
-          (* Printf.printf "entering directory %s\n" full_path; *)
+          (* Printf.printf "entering directory %s\n%!" full_path; *)
 
 
           let new_dict = parse_dir' (Unix.opendir full_path) dict full_path in
@@ -320,7 +320,7 @@ let parse_dir dir_name =
         end
         else begin
           let full_path = dir_name ^ Filename.dir_sep ^ f_name in
-          (* Printf.printf "%s\n%!" full_path; *)
+          Printf.printf "%s\n%!" full_path;
           (* Printf.printf "entering file\n%!"; *)
 
           (* REMOVE ME AND UNCOMMENT BELOW *)

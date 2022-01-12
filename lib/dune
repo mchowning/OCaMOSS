@@ -6,4 +6,4 @@
   (dev
     (flags (:standard -warn-error -A))
     (env-vars 
-      (LANGUAGE_FILES_PATH "../language_files/"))))
+      (LANGUAGE_FILES_PATH "../language_files/"))) )

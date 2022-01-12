@@ -76,25 +76,25 @@ let rem_white_space code_string =
  * ["Hello"; "!"; "World"; "?"]]
 *)
 
+module C = Base.Char;;
 let split_and_keep_on_spec_chars spec_chars str =
-  let rec str_to_chr_arr str =
-    let tail_len = String.length str - 1 in
-    match str with
-    | "" -> []
-    | str -> (String.get str 0)::(str_to_chr_arr (String.sub str 1 tail_len))
-  in
-  let char_array = str_to_chr_arr str in
-  (List.fold_left
-     (fun acc_arr chr ->
-        let str_of_chr = String.make 1 chr in
-        if List.mem chr spec_chars then
-          List.cons "" (List.cons str_of_chr acc_arr)
-        else
-          match acc_arr with
-          | h::t -> (String.concat "" [h;str_of_chr])::t
-          | [] -> failwith "Array should never be empty")
-     [""]
-     char_array) |> List.filter (fun str -> str <> "") |> List.rev
+  String.fold_left (fun acc c -> begin
+    let is_special_char c = List.exists (fun x -> x == c) spec_chars in
+    let open C in
+    if is_special_char c
+    then (C.to_string c) :: acc
+    else match acc with
+         | [] -> [C.to_string c] 
+         | (s :: rest) ->
+              match Base.String.to_list s with
+              | [] -> raise (Failure "list should not have empty strings")
+              | [h] -> 
+                  if is_special_char h
+                  then C.to_string c :: acc
+                  else (s ^ C.to_string c) :: rest
+              | _ -> (s ^ C.to_string c) :: rest
+  end ) [] str
+  |> List.rev
 
 (* [split_on_str str_to_split_on acc_str_arr str_to_split] splits up
  * [str_to_split] on every instance of [str_to_split_on] when
@@ -215,13 +215,24 @@ let remove_noise comment_info code_string keywords spec_chars is_txt =
       if comment_info.strings then remove_strings s |> String.concat ""
       else s
     in
+    let print_and_pass message input = begin
+      print_endline message;
+      input
+    end in
     code_string 
+    (* |> print_and_pass "before rm_strings" *)
     |> rm_strings
+    (* |> print_and_pass "before rm_mult_line_comment" *)
     |> rm_mult_line_comment 
+    (* |> print_and_pass "before rm_one_line_comment" *)
     |> rm_one_line_comment
+    (* |> print_and_pass "before split_and_keep_on_spec_chars" *)
     |> split_and_keep_on_spec_chars spec_chars 
+    (* |> print_and_pass "before rem_white_space" *)
     |> List.map rem_white_space 
+    (* |> print_and_pass "before flatten" *)
     |> List.flatten 
+    (* |> print_and_pass "before replace_generics" *)
     |> replace_generics keywords spec_chars 
     |> String.concat ""
 
