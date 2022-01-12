@@ -237,15 +237,17 @@ let remove_noise comment_info code_string keywords spec_chars is_txt =
     |> String.concat ""
 
 (* Refer to preprocessing.mli for this function's specifications *)
-let k_grams s k =
-  let rec k_grams_helper acc s n =
-    try
-      let n_sub_str = String.sub s 0 n in
-      let tail_str = String.sub s 1 ((String.length s)-1) in
-      k_grams_helper (n_sub_str::acc) tail_str n
-    with Invalid_argument _ -> List.rev acc
+let rec k_grams s n =
+  let rec k_grams_helper s n i =
+    if String.length s < n + i
+    then []
+    else begin
+      let n_sub_str = String.sub s i n in
+      n_sub_str :: k_grams_helper s n (i+1)
+    end
   in
-  k_grams_helper [] s k
+  k_grams_helper s n 0
+
 
 (* [determine_language_file f] returns the string that represents the name of
  * of the json file that contains all relevant information about the language
