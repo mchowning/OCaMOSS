@@ -234,16 +234,20 @@ let remove_noise comment_info code_string keywords spec_chars is_txt =
     |> List.flatten 
     (* |> print_and_pass "before replace_generics" *)
     |> replace_generics keywords spec_chars 
+    (* |> print_and_pass "before concat" *)
     |> String.concat ""
 
 (* Refer to preprocessing.mli for this function's specifications *)
 let rec k_grams s n =
-  let rec k_grams_helper s index n =
-    if String.length s < n + index
-    then []
-    else String.sub s index n :: k_grams_helper s (index+1) n
+  let rec helper s index n acc =  
+    if String.length s < index + n
+    then acc
+    else begin
+      let gram = String.sub s index n in
+      helper s (index+1) n (gram::acc)
+    end
   in
-  k_grams_helper s 0 n
+  helper s 0 n []
 
 
 (* [determine_language_file f] returns the string that represents the name of
@@ -298,22 +302,32 @@ let get_ngrams f n =
     let f_channel = open_in f in
     let f_string = really_input_string f_channel (in_channel_length f_channel) in
     close_in f_channel;
-    (* let f_string = hash_helper (open_in f) language_file in *)
     let is_txt = check_suffix f "txt" in
     let com_info = language.info.comment_info in
     (* Printf.printf "Before remove_noise\n%!"; *)
     let noise_removed_str =
       remove_noise com_info f_string keywords spec_chars is_txt in
-    (* Printf.printf "Before k_grams\n%!"; *)
-    let result = Some (k_grams noise_removed_str n) in
-    (* Printf.printf "After k_grams\n%!"; *)
-    result
+    Printf.printf "Before k_grams\n%!";
+    let result = k_grams noise_removed_str n in
+    Printf.printf "After k_grams: %n\n%!" (List.length result);
+    Some result
 
 (* Refer to preprocessing.mli for this function's specifications *)
 let hash_file f = begin
   match (get_ngrams f 35) with
   | None -> None
-  | Some n_grams -> Some (List.map (Hashtbl.hash) n_grams)
+  | Some n_grams -> begin
+      Printf.printf "Before hashing: %n\n%!" (List.length n_grams);
+      (* Some (List.map (Hashtbl.hash) n_grams) *)
+      Some (List.map (fun h -> begin
+        Printf.printf "Hashing: %s\n%!" h;
+        let result = Hashtbl.hash h in
+        (* let result = Base.Hashable.hash h in *)
+        print_endline "hashed it";
+        (* Printf.printf "Hashing: %s\n%!" result; *)
+        result
+      end) n_grams)
+  end
   end
 
 (* Refer to preprocessing.mli for this function's specifications *)

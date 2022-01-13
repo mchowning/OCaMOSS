@@ -1,6 +1,6 @@
 (library
  (name OCaMossLib)
- (libraries ANSITerminal core str unix yojson)
+ (libraries ANSITerminal core str streaming unix yojson)
  )
 (env
   (dev

@@ -298,7 +298,7 @@ type state_dirs = {
 let count = ref 0
 
 let parse_dir dir_name = 
-  let rec parse_dir' dir dict dir_name =
+  (* let rec parse_dir' dir dict dir_name =
     try
       let f_name = Unix.readdir dir in
       if String.get f_name 0 = '.'
@@ -328,19 +328,166 @@ let parse_dir dir_name =
 
           count := !count + 1;
 
-          match (Preprocessing.hash_file full_path) with
+          (* match (Preprocessing.hash_file full_path) with
           | None -> parse_dir' dir dict dir_name
           | Some hashes -> 
               let winnowed_hashes = Winnowing.winnow 40 hashes in
               let new_dict = Comparison.FileDict.insert full_path winnowed_hashes dict in
-              parse_dir' dir new_dict dir_name
+              parse_dir' dir new_dict dir_name *)
+
+          (* let hashed_file = Preprocessing.hash_file full_path in
+          let new_dict = match hashed_file with
+          | None -> dict
+          | Some hashes -> 
+              let winnowed_hashes = Winnowing.winnow 40 hashes in
+              Comparison.FileDict.insert full_path winnowed_hashes dict
+          in 
+          parse_dir' dir new_dict dir_name *)
+          parse_dir' dir dict dir_name
+
         end
     with
     | End_of_file -> 
         Unix.closedir dir;
         dict
+    in
+  parse_dir' (Unix.opendir dir_name) Comparison.FileDict.empty dir_name *)
+
+  (* let rec parse_dir' dir dict dir_name =
+    match Unix.readdir dir with
+    | f_name ->
+      if String.get f_name 0 = '.'
+      then begin
+        (* Printf.printf "skipping %s\n%!" f_name; *)
+        parse_dir' dir dict dir_name 
+      end
+      else
+        let full_path = dir_name ^ Filename.dir_sep ^ f_name in
+        (* Printf.printf "Parsing %s\n%!" full_path; *)
+        let kind = (Unix.stat full_path).st_kind in
+        if kind == S_DIR
+        then begin
+          (* Printf.printf "entering directory %s\n%!" full_path; *)
+
+
+          let new_dict = parse_dir' (Unix.opendir full_path) dict full_path in
+          parse_dir' dir new_dict dir_name
+        end
+        else begin
+          let full_path = dir_name ^ Filename.dir_sep ^ f_name in
+          Printf.printf "%s\n%!" full_path;
+          (* Printf.printf "entering file\n%!"; *)
+
+          (* REMOVE ME AND UNCOMMENT BELOW *)
+          (* parse_dir' dir dict dir_name *)
+
+          count := !count + 1;
+
+          (* match (Preprocessing.hash_file full_path) with
+          | None -> parse_dir' dir dict dir_name
+          | Some hashes -> 
+              let winnowed_hashes = Winnowing.winnow 40 hashes in
+              let new_dict = Comparison.FileDict.insert full_path winnowed_hashes dict in
+              parse_dir' dir new_dict dir_name *)
+
+          (* let hashed_file = Preprocessing.hash_file full_path in
+          print_endline "hashed file";
+          let new_dict = match hashed_file with
+          | None -> dict
+          | Some hashes -> 
+              let winnowed_hashes = Winnowing.winnow 40 hashes in
+              print_endline "winnowed";
+              Comparison.FileDict.insert full_path winnowed_hashes dict
+          in 
+          print_endline "recursive call";
+          parse_dir' dir new_dict dir_name *)
+          parse_dir' dir dict dir_name
+        end
+    | exception End_of_file -> 
+        Unix.closedir dir;
+        dict
+    in *)
+
+
+  let dir_contents dir =
+    let rec loop result = function
+      | f::fs when Sys.is_directory f ->
+            Sys.readdir f
+            |> Array.to_list
+            |> List.map (Filename.concat f)
+            |> List.append fs
+            |> loop result
+      | f::fs -> loop (f::result) fs
+      | []    -> result
+    in
+      loop [] [dir]
   in
-  parse_dir' (Unix.opendir dir_name) Comparison.FileDict.empty dir_name
+  let files =  dir_contents dir_name in
+
+
+
+  List.fold_left (fun acc file_path -> begin
+
+    let file_path = "/Users/matt/code/a8c/WordPress/src/js/_enqueues/vendor/tinymce/tinymce.js" in
+    print_endline file_path;
+
+    let hashed_file = hash_file file_path in
+
+    print_endline "hashed";
+
+    match hashed_file with
+    | None -> acc
+    | Some hashes ->
+      let winnowed_hashes = Winnowing.winnow 40 hashes in
+
+      (* print_endline "winnowed";
+      acc *)
+
+      Comparison.FileDict.insert file_path winnowed_hashes acc;
+  end) Comparison.FileDict.empty files
+
+
+
+    (* let file_path = "/Users/matt/code/a8c/WordPress/src/js/_enqueues/vendor/tinymce/tinymce.js" in
+    let hashed_file = hash_file file_path in
+    Comparison.FileDict.empty *)
+
+
+  (* let rec collect_files dir dir_name acc =
+    count := !count + 1;
+    match Unix.readdir dir with
+    | f_name ->
+      if String.get f_name 0 = '.'
+      then begin
+        (* Printf.printf "skipping %s\n%!" f_name; *)
+        collect_files dir dir_name acc
+      end
+      else
+        let full_path = dir_name ^ Filename.dir_sep ^ f_name in
+        (* Printf.printf "Parsing %s\n%!" full_path; *)
+        let kind = (Unix.stat full_path).st_kind in
+        if kind == S_DIR
+        then begin
+          (* Printf.printf "entering directory %s\n%!" full_path; *)
+
+          let sub_dir_files = collect_files (Unix.opendir full_path) full_path acc in
+          let new_acc = acc @ sub_dir_files in
+          collect_files dir dir_name new_acc
+        end
+        else begin
+          Printf.printf "%s\n%!" full_path;
+          collect_files dir dir_name (full_path :: acc)
+        end
+    | exception End_of_file -> 
+        Unix.closedir dir;
+        acc
+
+  in
+
+  let all_files = collect_files (Unix.opendir dir_name) dir_name [] in
+  all_files *)
+
+  (* parse_dir' (Unix.opendir dir_name) Comparison.FileDict.empty dir_name *)
 
 let libmain_func () =
   let usage_msg = "-needles <needle_dir> -haystack <haystack_dir>" in
@@ -351,20 +498,21 @@ let libmain_func () =
      ("-haystack", Arg.Set_string haystack_dir, "Set compare to directory name")] in
   (* let anon_arg_fun arg = Printf.printf "%s\n" ("Anonymous argument: " ^ arg) in *)
   let anon_arg_fun arg = begin
-
-    let _ = hash_file arg in
+    print_endline "Running anonymous argument";
+    let hashes = hash_file arg in
+    match hashes with
+    | Some h -> Printf.printf "num hashes: %n\n%!" (List.length h);
     (); 
   end in
   Arg.parse speclist anon_arg_fun usage_msg;
 
   try
-    (* Printf.printf "\n\nneedle_dir: %s\n" !needle_dir; *)
-    (* Printf.printf "count before: %i\n%!" !count; *)
-    let needle_files = parse_dir !needle_dir in
-    (* Printf.printf "count: %i\n%!" !count; *)
-    ()
+    (* let needle_files = parse_dir !needle_dir in *)
+
+    Printf.printf "Count: %i\n" !count;
   with
   | e -> 
       Printf.printf "Count: %i\n" !count;
       Printf.printf "Error: %s\n" (Printexc.to_string e);
+      Printexc.print_backtrace stderr;
       Printf.printf "Backtrace: %s\n" (Printexc.get_backtrace ());
