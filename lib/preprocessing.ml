@@ -307,9 +307,9 @@ let get_ngrams f n =
     (* Printf.printf "Before remove_noise\n%!"; *)
     let noise_removed_str =
       remove_noise com_info f_string keywords spec_chars is_txt in
-    Printf.printf "Before k_grams\n%!";
+    (* Printf.printf "Before k_grams\n%!"; *)
     let result = k_grams noise_removed_str n in
-    Printf.printf "After k_grams: %n\n%!" (List.length result);
+    (* Printf.printf "After k_grams: %n\n%!" (List.length result); *)
     Some result
 
 (* Refer to preprocessing.mli for this function's specifications *)
@@ -317,13 +317,13 @@ let hash_file f = begin
   match (get_ngrams f 35) with
   | None -> None
   | Some n_grams -> begin
-      Printf.printf "Before hashing: %n\n%!" (List.length n_grams);
+      (* Printf.printf "Before hashing: %n\n%!" (List.length n_grams); *)
       (* Some (List.map (Hashtbl.hash) n_grams) *)
-      Some (List.map (fun h -> begin
-        Printf.printf "Hashing: %s\n%!" h;
+      Some (Base.List.map ~f:(fun h -> begin
+        (* Printf.printf "Hashing: %s\n%!" h; *)
         let result = Hashtbl.hash h in
         (* let result = Base.Hashable.hash h in *)
-        print_endline "hashed it";
+        (* print_endline "hashed it"; *)
         (* Printf.printf "Hashing: %s\n%!" result; *)
         result
       end) n_grams)

@@ -440,11 +440,13 @@ let parse_dir dir_name =
     | Some hashes ->
       let winnowed_hashes = Winnowing.winnow 40 hashes in
 
+      print_endline "winnowed";
       (* print_endline "winnowed";
       acc *)
 
       Comparison.FileDict.insert file_path winnowed_hashes acc;
-  end) Comparison.FileDict.empty files
+  (* end) Comparison.FileDict.empty files *)
+  end) Comparison.FileDict.empty [List.hd files]
 
 
 
@@ -507,7 +509,7 @@ let libmain_func () =
   Arg.parse speclist anon_arg_fun usage_msg;
 
   try
-    (* let needle_files = parse_dir !needle_dir in *)
+    let needle_files = parse_dir !needle_dir in
 
     Printf.printf "Count: %i\n" !count;
   with
