@@ -263,13 +263,15 @@ let determine_language_file f =
   else if check_suffix f "java" then Some "java_info.json"
   else if check_suffix f "min.js" then None
   else if check_suffix f "js" then Some "javascript_info.json"
+  else if check_suffix f "json" then Some "javascript_info.json"
   else if check_suffix f "ts" then Some "javascript_info.json" (* typescript keywords are included in the javascript file *)
   else if check_suffix f "py" then Some "python_info.json"
+  (* else if check_suffix f "php" then Some "php_info.json" *)
   else None
 
 let language_info_assoc_list = 
   [
-  ".txt", get_language_info "txt_info.json";
+  (* ".txt", get_language_info "txt_info.json"; *)
   ".ml", get_language_info "ocaml_info.json";
   ".mli", get_language_info "ocaml_info.json";
   ".c", get_language_info "c_info.json";
