@@ -1,20 +1,16 @@
 with import <nixpkgs> {};
 
 let
- ocamlPackages = pkgs.ocaml-ng.ocamlPackages_4_13;
+
+ shared = import ./shared.nix;
+
 in
 
-ocamlPackages.buildDunePackage {
+shared.ocamlPackages.buildDunePackage {
   pname = "OCaMoss";
   version = "0.1";
   useDune2 = true;
   src = nix-gitignore.gitignoreFilterSource lib.cleanSourceFilter [] ./.;
   doCheck = true;
-  buildInputs = with ocamlPackages; [
-     ansiterminal
-     core
-     core_extended
-     ounit
-     yojson
-  ];
+  buildInputs = shared.buildInputs;
 }
