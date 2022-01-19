@@ -11,8 +11,8 @@ pkgs.mkShell {
      ocaml
      findlib
      dune_2
-     merlin
-     # ocaml-lsp
+     # merlin
+     ocaml-lsp
     ];
   # dependencies
   buildInputs = with ocamlPackages; [
