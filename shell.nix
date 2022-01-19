@@ -17,7 +17,6 @@ pkgs.mkShell {
   # dependencies
   buildInputs = with ocamlPackages; [
      ansiterminal
-     ansiterminal
      core
      core_extended
      ounit
