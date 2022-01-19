@@ -337,10 +337,8 @@ let libmain_func () =
   (* let anon_arg_fun arg = Printf.printf "%s\n" ("Anonymous argument: " ^ arg) in *)
   let anon_arg_fun arg = begin
     print_endline "Running anonymous argument";
-    let hashes = hash_file arg in
-    match hashes with
-    | Some h -> Printf.printf "num hashes: %n\n%!" (List.length h);
-    (); 
+    let Some hashes = hash_file arg in
+    Printf.printf "num hashes: %n\n%!" (List.length hashes);
   end in
   Arg.parse speclist anon_arg_fun usage_msg;
 
