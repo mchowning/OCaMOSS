@@ -312,11 +312,24 @@ let parse_dir dir_name =
 
 
 
-  Printf.printf "Parsed %d files\n%!" (List.length files);
+  Printf.printf "Parsing %d files\n%!" (List.length files);
+
+  let count = ref 0 in
+  let start = ref true in
+  let print_count s = begin
+    count := !count + 1;
+    let (_,y) = pos_cursor () in
+    let newY = if !start then y else y - 1 in
+    set_cursor 1 newY;
+    erase Below;
+    Printf.printf "%n\n%s%!" !count s;
+    start := false;
+  end in
+
   List.fold_left (fun acc file_path -> begin
 
-    (* let file_path = "/Users/matt/code/a8c/WordPress/src/js/_enqueues/vendor/tinymce/tinymce.js" in *)
-    print_endline file_path;
+    print_count file_path;
+    (* print_endline file_path; *)
 
     let hashed_file = hash_file file_path in
 
@@ -344,6 +357,7 @@ let libmain_func () =
 
   try
     let needle_files = parse_dir !needle_dir in
+    let haystack_files = parse_dir !haystack_dir in
 
     Printf.printf "Done successfully!\n%!";
   with
