@@ -359,7 +359,7 @@ let libmain_func () =
 
   try
     let needle_files = parse_dir !needle_dir in
-    (* let haystack_files = parse_dir !haystack_dir in *)
+    let haystack_files = parse_dir !haystack_dir in
 
     Printf.printf "Done successfully!\n%!";
   with
