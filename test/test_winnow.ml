@@ -19,8 +19,10 @@ let sort_results r =
  * returns: a string representation of the hashes contained in the input
  * side effects: prints the string that is created *)
 let res_to_string r =
-  r |> List.map (fun x -> fst x) |> List.map (string_of_int) |>
+  r |> List.map (fun x -> x.hash) |> List.map (string_of_int) |>
   List.fold_left (fun a x -> a ^ x ^ ",") ""
+
+let list_to_fingerprint (h,l) = { hash = h; location = l}
 
 (* Non-trivial test cases generated with a Python implementation of the same
  * algorithm *)
@@ -84,7 +86,7 @@ let tests = [
      Example modified to reflect robust winnowing *)
   "winnow10" >:: (fun _ -> begin 
     let input = [77;74;42;17;98;50;17;98;8;88;67;39;77;74;42;17;98] in
-    let expected = [(17,3);(8,8);(39,11);(17,15)] in
+    let expected = List.map list_to_fingerprint [(17,3);(8,8);(39,11);(17,15)] in
     let actual = winnow 4 input in
     assert_equal expected actual
   end);

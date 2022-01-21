@@ -4,7 +4,7 @@ open Dictionary
 open ANSITerminal
 (* let libmain_func () = print_endline "libmain_func" *)
 
-type color = RED | GREEN | CYAN | TEXT
+(* type color = RED | GREEN | CYAN | TEXT
 
 type state = {display: (color * string) list; directory: string; results:
                 CompDict.t option; result_files: (color * string) list;
@@ -273,7 +273,7 @@ and handle_pair r st =
                                                          (f2) ^ "\n")
                       "" (create_pair_sim_list f (FileDict.to_list f_d))))
       "" (CompDict.to_list r) in
-  repl {st with display = [(TEXT,disp)]}
+  repl {st with display = [(TEXT,disp)]} *)
 
 (* ----------------------------------------------------------------------------------- *)
 (* ----------------------------------------------------------------------------------- *)
@@ -296,6 +296,7 @@ let count = ref 0
 let parse_dir dir_name = 
 
   let dir_contents dir =
+    (* FIXME skip hidden directories (starting with .) *)
     let rec loop result = function
       | f::fs when Sys.is_directory f ->
             Sys.readdir f
@@ -337,8 +338,9 @@ let parse_dir dir_name =
     | None -> acc
     | Some hashes ->
       let winnowed_hashes = Winnowing.winnow 40 hashes in
-      Comparison.FileDict.insert file_path winnowed_hashes acc;
-  end) Comparison.FileDict.empty files
+      Hashtbl.add acc file_path winnowed_hashes;
+      acc
+  end) (Hashtbl.create (List.length files)) files
 
 let libmain_func () =
   let usage_msg = "-needles <needle_dir> -haystack <haystack_dir>" in
@@ -357,7 +359,7 @@ let libmain_func () =
 
   try
     let needle_files = parse_dir !needle_dir in
-    let haystack_files = parse_dir !haystack_dir in
+    (* let haystack_files = parse_dir !haystack_dir in *)
 
     Printf.printf "Done successfully!\n%!";
   with

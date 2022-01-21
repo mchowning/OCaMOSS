@@ -56,6 +56,10 @@ module Window : BoundedQueueWithCounter = struct
     List.fold_left f init (to_list q)
 end
 
+type fingerprint = {
+	hash : int;
+	location: int;
+}
 
 (* size = window size
    hs = hashes list *)
@@ -63,43 +67,45 @@ let winnow size hs =
 
   let hs_length = List.length hs in
 
-  let hs_indexed = List.combine hs (Base.List.range 0 hs_length) in
+  (* FIXME have this create fingerprints *)
+  let hs_indexed' = List.combine hs (Base.List.range 0 hs_length) in
+  let hs_indexed = Base.List.map hs_indexed' ~f:(fun (h,l) -> {hash = h; location = l}) in
   let mins =
     let min_from_window window = begin
       (* print_endline "window"; *)
       (* List.iter (fun (h,i) -> Printf.printf "(%i,%n)\n%!" h i) window; *)
 
-      List.fold_right (fun (h,i) min_option -> 
+      List.fold_right (fun win min_option -> 
         match min_option with
-        | None -> Some (h,i) 
-        | Some (mh,mi) -> 
-            if h < mh
-            then Some (h,i)
-            else Some (mh,mi)
+        | None -> Some win
+        | Some prev -> 
+            if win.hash < prev.hash
+            then Some win
+            else Some prev
       ) window None |> Option.get 
     end in
 
-    let (winnowed,_) = List.fold_left (fun acc (h,idx) -> 
-      let (mins, last) = acc in
-      if idx + size > hs_length
+    let (winnowed,_) = List.fold_left (fun acc f -> 
+      let (mins, last_option) = acc in
+      if f.location + size > hs_length
       then acc
       else
-        let window = Base.List.sub hs_indexed ~pos:idx ~len:size in
+        let window = Base.List.sub hs_indexed ~pos:f.location ~len:size in
         let new_min = min_from_window window in
         match mins with
         | [] -> ([new_min], Some new_min)
-        |_ -> let (l_h, l_idx) = Option.get last in
-              if idx <= l_idx
+        |_ -> let last = Option.get last_option in
+              if f.location <= last.location
 
               (* Only have to do a single comparison *)
-              then if h < l_h 
-                   then let new_min = (h,idx) in
+              then if f.hash < last.hash
+                   then let new_min = f in
                         (new_min :: mins, Some new_min)
                    else acc
 
               (* Previous min is no longer in window.
                  Need to compare all elements in window *)
-              else if (fst new_min) == l_h
+              else if new_min.hash == last.hash
 
                    (* No new minimum if same as last *)
                    then acc
