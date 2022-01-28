@@ -10,6 +10,7 @@ pkgs.mkShell {
      dune_2
      # merlin
      ocaml-lsp
+     utop
     ];
   # dependencies
   buildInputs = shared.buildInputs;

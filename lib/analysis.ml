@@ -1,4 +1,3 @@
-
 type hashLocation = {
   path: string;
   line: int;
@@ -53,8 +52,9 @@ let by_file hash_locations = begin
   List.iter (fun (hl: hashLocation) -> 
       let value = match Hashtbl.find_opt result hl.path with
         | None -> [hl.line]
-        | Some ls -> hl.line :: ls 
+        | Some ls -> ls @ [hl.line] (* append to end to maintain order *)
       in
+      Hashtbl.remove result hl.path;
       Hashtbl.add result hl.path value
     ) hash_locations;
   result

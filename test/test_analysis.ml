@@ -1,9 +1,20 @@
 open OUnit2
 open OCaMossLib
 
+
+let list_printer l_printer ls =
+  let strings = List.map (fun x -> "    " ^ l_printer x) ls in
+  let items = String.concat ",\n" strings in
+  "[\n" ^ items ^ "\n]"
+
+let hashtbl_val_int_to_str tbl = Hashtbl.fold (fun a b acc -> begin
+  Hashtbl.add acc a (list_printer Int.to_string b);
+  acc
+end) tbl (Hashtbl.create 10)
+
 let hashtbl_printer tbl = 
   Hashtbl.fold (fun key value acc ->
-    acc ^ "\n  " ^ key (*^ ": " ^ value *)
+    acc ^ "\n  " ^ key ^ ": " ^ value
   ) tbl "\n{" |> (fun s -> s ^ "\n}\n")
 
 let hashMatch_printer (hm: Analysis.hashMatch) =
@@ -13,14 +24,7 @@ let hashMatch_printer (hm: Analysis.hashMatch) =
        ^ "haystack_hash: " ^ Int.to_string hm.haystack_line ^
   " }"
 
-let list_printer l_printer ls =
-  let strings = List.map (fun x -> "    " ^ l_printer x) ls in
-  let items = String.concat ",\n" strings in
-  "[\n" ^ items ^ "\n]"
-
-
-let tests = [
-  "description" >:: (fun _ -> assert_equal 1 1);
+let matches_needles _ =
 
   let input_needles: (string, Winnowing.fingerprint list) Hashtbl.t = Hashtbl.create 5 in
   Hashtbl.add input_needles "a" [ 
@@ -75,5 +79,44 @@ let tests = [
       haystack_line = 30 };
   ] in
 
-  "matches needles" >:: (fun _ -> assert_equal ~printer:(list_printer hashMatch_printer) expected actual);
+  assert_equal ~printer:(list_printer hashMatch_printer) expected actual
+
+
+
+
+let results_by_file _ =
+
+  let input: Analysis.hashLocation list = [
+    { path = "a"; 
+      line = 1; };
+    { path = "a"; 
+      line = 2; };
+    { path = "a"; 
+      line = 3; };
+    { path = "b"; 
+      line = 11; };
+    { path = "c"; 
+      line = 20; };
+    { path = "b"; 
+      line = 12; };
+    { path = "b"; 
+      line = 13; }
+  ] in
+  let actual = Analysis.by_file input in
+
+  let expected = 
+    let tbl = Hashtbl.create 10 in begin
+      Hashtbl.add tbl "a" [1;2;3];
+      Hashtbl.add tbl "b" [11;12;13];
+      Hashtbl.add tbl "c" [20];
+
+      tbl
+    end in
+
+  assert_equal ~printer:(fun tbl -> hashtbl_printer (hashtbl_val_int_to_str tbl)) expected actual
+ 
+
+let tests = [
+  "matches needles" >:: matches_needles;
+  "results by file" >:: results_by_file;
 ]
