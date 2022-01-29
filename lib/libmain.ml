@@ -66,6 +66,11 @@ let libmain_func () =
 
   Arg.parse speclist anon_arg_fun usage_msg;
 
+  Printf.printf "needle_arg: %s\n%!" !needle_arg;
+  Printf.printf "haystack_arg: %s\n%!" !haystack_arg;
+  Printf.printf "guarantee_threshold arg: %n\n%!" !guarantee_threshold;
+  Printf.printf "min_threshold arg: %n\n%!" !min_threshold;
+
   let parse_fun = parser !guarantee_threshold !min_threshold in 
   let needles = parse_fun !needle_arg in
   let haystack = parse_fun !haystack_arg in
