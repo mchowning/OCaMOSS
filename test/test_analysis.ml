@@ -1,7 +1,6 @@
 open OUnit2
 open OCaMossLib
 
-
 let location_to_string (l: Analysis.locations) = 
   "{ " ^ Int.to_string l.needle_line ^ "; " ^ Int.to_string l.haystack_line ^ " }"
 let list_printer l_printer ls =
