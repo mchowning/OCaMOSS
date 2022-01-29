@@ -1,4 +1,4 @@
-module type BoundedQueueWithCounter = sig
+(* module type BoundedQueueWithCounter = sig
   type 'a t
   val empty : int -> 'a t
   val create : int -> 'a -> 'a t
@@ -54,7 +54,7 @@ module Window : BoundedQueueWithCounter = struct
 
   let fold f init q =
     List.fold_left f init (to_list q)
-end
+end *)
 
 type fingerprint = {
 	hash : int;
@@ -72,9 +72,6 @@ let winnow size hs =
   let hs_indexed = Base.List.map hs_indexed' ~f:(fun (h,l) -> {hash = h; location = l}) in
   let mins =
     let min_from_window window = begin
-      (* print_endline "window"; *)
-      (* List.iter (fun (h,i) -> Printf.printf "(%i,%n)\n%!" h i) window; *)
-
       List.fold_right (fun win min_option -> 
         match min_option with
         | None -> Some win

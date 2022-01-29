@@ -300,18 +300,14 @@ let get_ngrams f n =
   | Some language ->
     let keywords = language.info.keywords in
     let spec_chars = language.info.special_chars in
-    (* Printf.printf "\n\nBefore file read\n%!"; *)
     let f_channel = open_in f in
     let f_string = really_input_string f_channel (in_channel_length f_channel) in
     close_in f_channel;
     let is_txt = check_suffix f "txt" in
     let com_info = language.info.comment_info in
-    (* Printf.printf "Before remove_noise\n%!"; *)
     let noise_removed_str =
       remove_noise com_info f_string keywords spec_chars is_txt in
-    (* Printf.printf "Before k_grams\n%!"; *)
     let result = k_grams noise_removed_str n in
-    (* Printf.printf "After k_grams: %n\n%!" (List.length result); *)
     Some result
 
 (* Refer to preprocessing.mli for this function's specifications *)
@@ -319,14 +315,8 @@ let hash_file min_threshold f = begin
   match (get_ngrams f min_threshold) with
   | None -> None
   | Some n_grams -> begin
-      (* Printf.printf "Before hashing: %n\n%!" (List.length n_grams); *)
-      (* Some (List.map (Hashtbl.hash) n_grams) *)
       Some (Base.List.map ~f:(fun h -> begin
-        (* Printf.printf "Hashing: %s\n%!" h; *)
         let result = Hashtbl.hash h in
-        (* let result = Base.Hashable.hash h in *)
-        (* print_endline "hashed it"; *)
-        (* Printf.printf "Hashing: %s\n%!" result; *)
         result
       end) n_grams)
   end
