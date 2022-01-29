@@ -293,7 +293,11 @@ type state_dirs = {
 
 let count = ref 0
 
-let parse_dir dir_name = 
+let parse_dir guarantee_threshold min_threshold dir_name = 
+
+  if (min_threshold > guarantee_threshold) 
+    then failwith "noise_threshold must be greater than guarantee_threshold";
+  let window_size = guarantee_threshold - min_threshold + 1 in
 
   let dir_contents dir =
     (* FIXME skip hidden directories (starting with .) *)
@@ -332,34 +336,41 @@ let parse_dir dir_name =
     print_count file_path;
     (* print_endline file_path; *)
 
-    let hashed_file = hash_file file_path in
+    let hashed_file = hash_file min_threshold file_path in
 
     match hashed_file with
     | None -> acc
     | Some hashes ->
-      let winnowed_hashes = Winnowing.winnow 40 hashes in
+      let winnowed_hashes = Winnowing.winnow window_size hashes in
       Hashtbl.add acc file_path winnowed_hashes;
       acc
   end) (Hashtbl.create (List.length files)) files
 
 let libmain_func () =
-  let usage_msg = "-needles <needle_dir> -haystack <haystack_dir>" in
+  let usage_msg = "--needles <needle_dir> --haystack <haystack_dir> --guarnatee_threshold <number> --min_threshold <number>" in
   let needle_dir = ref "" in
   let haystack_dir = ref "" in
+  let guarantee_threshold = ref 70 in
+  let min_threshold = ref 30 in
   let speclist =
-    [("-needles", Arg.Set_string needle_dir, "Set base directory name");
-     ("-haystack", Arg.Set_string haystack_dir, "Set compare to directory name")] in
+    [("--needles", Arg.Set_string needle_dir, "Set base directory name");
+     ("--haystack", Arg.Set_string haystack_dir, "Set compare to directory name");
+     ("--guarantee_threshold", Arg.Set_int guarantee_threshold, "After removing noise, files with at least this many matching consecutive characters are guaranteed to be identified");
+     ("--min_threshold", Arg.Set_int min_threshold, "After removing noise, files without this many matching consecutive characters will NOT be identified")] in
   (* let anon_arg_fun arg = Printf.printf "%s\n" ("Anonymous argument: " ^ arg) in *)
   let anon_arg_fun arg = begin
     print_endline "Running anonymous argument";
-    let Some hashes = hash_file arg in
+    let Some hashes = hash_file 35 arg in
     Printf.printf "num hashes: %n\n%!" (List.length hashes);
   end in
   Arg.parse speclist anon_arg_fun usage_msg;
 
   try
-    let needle_files = parse_dir !needle_dir in
-    let haystack_files = parse_dir !haystack_dir in
+    let parse_fun = parse_dir !guarantee_threshold !min_threshold in 
+    let needle_files = parse_fun !needle_dir in
+    let haystack_files = parse_fun !haystack_dir in
+
+    Analysis.analyze needle_files haystack_files;
 
     Printf.printf "Done successfully!\n%!";
   with

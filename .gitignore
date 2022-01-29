@@ -3,4 +3,4 @@ tests/.DS_Store
 _build/
 ocamoss
 .vscode/
-test-dirs/
+testdirs/

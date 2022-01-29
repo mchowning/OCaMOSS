@@ -240,14 +240,14 @@ let remove_noise comment_info code_string keywords spec_chars is_txt =
 (* Refer to preprocessing.mli for this function's specifications *)
 let rec k_grams s n =
   let s_length = String.length s in
-  let rec helper s index n acc =  
+  let rec helper s index acc =  
     if index < 0
     then acc
     else
       let gram = String.sub s index n in
-      helper s (index-1) n (gram::acc)
+      helper s (index-1) (gram::acc)
   in
-  helper s (s_length - n) n []
+  helper s (s_length - n) []
 
 
 (* [determine_language_file f] returns the string that represents the name of
@@ -315,8 +315,8 @@ let get_ngrams f n =
     Some result
 
 (* Refer to preprocessing.mli for this function's specifications *)
-let hash_file f = begin
-  match (get_ngrams f 35) with
+let hash_file min_threshold f = begin
+  match (get_ngrams f min_threshold) with
   | None -> None
   | Some n_grams -> begin
       (* Printf.printf "Before hashing: %n\n%!" (List.length n_grams); *)
