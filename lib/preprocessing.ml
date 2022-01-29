@@ -265,8 +265,8 @@ let determine_language_file f =
   else if check_suffix f "js" then Some "javascript_info.json"
   else if check_suffix f "json" then Some "javascript_info.json"
   else if check_suffix f "ts" then Some "javascript_info.json" (* typescript keywords are included in the javascript file *)
+  else if check_suffix f "php" then Some "php_info.json"
   else if check_suffix f "py" then Some "python_info.json"
-  (* else if check_suffix f "php" then Some "php_info.json" *)
   else None
 
 let language_info_assoc_list = 
@@ -279,6 +279,7 @@ let language_info_assoc_list =
   ".java", get_language_info "java_info.json";
   ".js", get_language_info "javascript_info.json";
   ".ts", get_language_info "javascript_info.json"; (* typescript keywords are included in the javascript file *)
+  ".php", get_language_info "php_info.json";
   ".py", get_language_info "python_info.json";
   ]
 
