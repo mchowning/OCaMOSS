@@ -333,8 +333,7 @@ let parse_dir guarantee_threshold min_threshold dir_name =
 
   List.fold_left (fun acc file_path -> begin
 
-    print_count file_path;
-    (* print_endline file_path; *)
+    (* print_count file_path; *)
 
     let hashed_file = hash_file min_threshold file_path in
 

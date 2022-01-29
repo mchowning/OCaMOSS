@@ -59,60 +59,19 @@ let hash_matches_to_table (hms: hashMatch list) = begin
   Base.Hashtbl.map needle_key_name ~f:(Base.Hashtbl.of_alist_multi (module Base.String))
 end
 
-let hash_match_table_print hm_tbl =
-  (* let sort_haystack_lengths = 
-    let one_level_ls = Base.Hashtbl.to_alist hm_tbl in
-    Base.List.map one_level_ls ~f:(fun (a, b) -> 
-      let two_level_ls = Base.Hashtbl.to_alist b in
-      let sorted_two_level_ls = Base.List.stable_sort two_level_ls ~compare:(fun (_,v1) (_,v2) ->
-        compare (Base.List.length v1) (Base.List.length v2)
-      ) in
-      (a, sorted_two_level_ls)
-      ) in *)
-
-  (* let sorted_by_num_haystack_matches = 
-    let one_level_ls = Base.Hashtbl.to_alist hm_tbl in
-    let two_level_ls = Base.List.map one_level_ls ~f:(fun (a, b) -> (a, Base.Hashtbl.to_alist b)) in
-    Base.List.stable_sort two_level_ls 
-      ~compare:(fun (_,h1) (_,h2) -> 
-        let haystacks_by_length hs = Base.List.stable_sort hs 
-              ~compare:(fun (_,v1) (_,v2) -> 
-                 compare (List.length v1) (List.length v2)
-               ) in
-        
-        let h1_by_length = haystacks_by_length h1 in
-        let h2_by_length = haystacks_by_length h2 in
-        compare  _ 
-      ) *)
-
+let hash_match_table_print needles_tb hm_tbl =
+  print_endline "\nRESULTS";
   let needles = Base.Hashtbl.to_alist hm_tbl in
   Base.List.iter needles ~f:(fun (needle, haystack_tbl) -> 
-    Printf.printf "%s\n%!" needle;
     let haystacks = Base.Hashtbl.to_alist haystack_tbl in
     Base.List.iter haystacks ~f:(fun (haystack, matches) -> 
-      Printf.printf "    %s\n%!" haystack;
-      Base.List.iter matches ~f:(fun locs -> 
-        Printf.printf "        %d %d\n%!" locs.needle_line locs.haystack_line
-      )
+      let total = Hashtbl.find needles_tb needle |> List.length in
+      let num_matches = List.length matches in
+      Printf.printf "\n%4d / %-4d  %s\n             %s\n%!" num_matches total needle haystack;
     )
   )
 
 let analyze needles haystack =
   find_matches needles haystack 
     |> hash_matches_to_table 
-    |> hash_match_table_print
-
-
-(* FIXME: Remove??? *)
-let by_file hash_locations = begin
-  let result = Hashtbl.create 10 in
-  List.iter (fun (hl: hashLocation) -> 
-      let value = match Hashtbl.find_opt result hl.path with
-        | None -> [hl.line]
-        | Some ls -> ls @ [hl.line] (* append to end to maintain order *)
-      in
-      Hashtbl.remove result hl.path;
-      Hashtbl.add result hl.path value
-    ) hash_locations;
-  result
-end
+    |> hash_match_table_print needles

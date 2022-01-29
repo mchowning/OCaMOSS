@@ -131,40 +131,7 @@ let hash_matches_to_table _ =
     in
   assert_equal ~cmp:(equality) ~printer:printer expected actual
 
-let results_by_file _ =
-
-  let input: Analysis.hashLocation list = [
-    { path = "a"; 
-      line = 1; };
-    { path = "a"; 
-      line = 2; };
-    { path = "a"; 
-      line = 3; };
-    { path = "b"; 
-      line = 11; };
-    { path = "c"; 
-      line = 20; };
-    { path = "b"; 
-      line = 12; };
-    { path = "b"; 
-      line = 13; }
-  ] in
-  let actual = Analysis.by_file input in
-
-  let expected = 
-    let tbl = Hashtbl.create 10 in begin
-      Hashtbl.add tbl "a" [1;2;3];
-      Hashtbl.add tbl "b" [11;12;13];
-      Hashtbl.add tbl "c" [20];
-
-      tbl
-    end in
-
-  assert_equal ~printer:(fun tbl -> hashtbl_printer (hashtbl_val_to_str (list_printer Int.to_string) tbl)) expected actual
- 
-
 let tests = [
   "matches needles" >:: matches_needles;
-  "results by file" >:: results_by_file;
   "haystack matches to table" >:: hash_matches_to_table;
 ]
