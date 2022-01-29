@@ -4,3 +4,4 @@ _build/
 ocamoss
 .vscode/
 testdirs/
+result
