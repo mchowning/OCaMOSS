@@ -19,6 +19,13 @@ let hashtbl_printer tbl =
     acc ^ "\n" ^ key ^ ": " ^ value
   ) tbl "\n{" |> (fun s -> s ^ "\n}\n")
 
+let base_hashtbl_printer tbl = 
+  Base.Hashtbl.to_alist tbl |> Base.List.map ~f:(fun (k, v) ->
+    k ^ ": " ^ v
+  ) |> String.concat "\n"
+
+
+
 let hashMatch_printer (hm: Analysis.hashMatch) =
   "{ " ^ "needle_path: " ^ hm.needle.path ^ ", " 
        ^ "needle_hash: " ^ Int.to_string hm.needle.line ^ ", " 
@@ -90,42 +97,39 @@ let hash_matches_to_table _ =
   ] in
   let actual = Analysis.hash_matches_to_table input in
 
-  let expected = begin
-    let tbl = Hashtbl.create 5 in
+  let expected =
+    let expected_tups = [
+      ("a", [
+        ("aa", (1, 10));
+      ]);
+      ("c", [
+        ("aa", (3, 40));
+        ("aa", (1, 10));
+        ("bb", (1, 30));
+        ("bb", (2, 20));
+      ])
+    ] in
+    let first_level = Base.Hashtbl.of_alist_exn (module Base.String) expected_tups in
+    Base.Hashtbl.map first_level ~f:(fun ls ->
+      let inner = Base.Hashtbl.of_alist_multi (module Base.String) ls in
+      Base.Hashtbl.map inner ~f:(fun inners ->
+        Base.List.map inners ~f:(fun (needle_line, haystack_line) -> ({ needle_line; haystack_line }: Analysis.locations))
+    ))
+  in
 
-    let subTbl_a = begin
-      let subTbl = Hashtbl.create 5 in
-      let (value: Analysis.locations list) = [
-        { needle_line = 1; haystack_line = 10 };
-      ] in
-      Hashtbl.add subTbl "aa" value;
-      subTbl
-    end in
-    Hashtbl.add tbl "a" subTbl_a;
-
-    let subTbl_c = begin
-      let subTbl = Hashtbl.create 1 in
-      let (value: Analysis.locations list) = [ 
-        { needle_line = 3; haystack_line = 40 }; 
-        { needle_line = 1; haystack_line = 10 }; 
-      ] in
-      Hashtbl.add subTbl "aa" value;
-
-      let (value: Analysis.locations list) = [ 
-        { needle_line = 1; haystack_line = 30 }; 
-        { needle_line = 2; haystack_line = 20 }; 
-      ] in
-      Hashtbl.add subTbl "bb" value;
-      subTbl
-    end in
-    Hashtbl.add tbl "c" subTbl_c;
-
-    tbl
-  end in
-
-  let inner_tbl_printer tbl = hashtbl_printer (hashtbl_val_to_str (list_printer location_to_string) tbl) in
-  let printer tbl = hashtbl_printer (hashtbl_val_to_str inner_tbl_printer tbl) in
-  assert_equal ~printer:printer expected actual
+  let inner_tbl_printer tbl = base_hashtbl_printer (Base.Hashtbl.map tbl ~f:(list_printer location_to_string)) in
+  let printer tbl = base_hashtbl_printer (Base.Hashtbl.map tbl ~f:inner_tbl_printer) in
+  let equality tbl1 tbl2 = Base.Hashtbl.equal 
+    (fun sub_tbl1 sub_tbl2 ->
+      Base.Hashtbl.equal 
+        (fun locs1 locs2 -> 
+          Base.List.equal (fun (loc1: Analysis.locations) loc2 ->
+            loc1.needle_line = loc2.needle_line && loc1.haystack_line = loc2.haystack_line
+          ) locs1 locs2
+        ) sub_tbl1 sub_tbl2
+    ) tbl1 tbl2 
+    in
+  assert_equal ~cmp:(equality) ~printer:printer expected actual
 
 let results_by_file _ =
 

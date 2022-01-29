@@ -50,35 +50,13 @@ let find_matches needles haystack = begin
 end
 
 let hash_matches_to_table (hms: hashMatch list) = begin
-
-  let tbl = Hashtbl.create (List.length hms) in
-  Base.List.iter hms ~f:(fun hm -> begin
-      let tbl' = match Hashtbl.find_opt tbl hm.needle.path with
-        | None -> Hashtbl.create 5
-        | Some t -> begin
-              Hashtbl.remove tbl hm.needle.path;
-              t
-            end
-      in
-
-      let locations = {
-        needle_line = hm.needle.line; 
-        haystack_line = hm.haystack.line 
-      } in
-
-      (match Hashtbl.find_opt tbl' hm.haystack.path with
-        | None -> begin
-              Hashtbl.add tbl' hm.haystack.path [ locations ];
-            end;
-        | Some ls -> begin
-            Hashtbl.remove tbl' hm.haystack.path;
-            Hashtbl.add tbl' hm.haystack.path (locations :: ls);
-          end);
-      
-      Hashtbl.add tbl hm.needle.path tbl'; 
-      end
-  );
-  tbl
+  let tups = Base.List.map hms ~f:(fun hm ->
+    (hm.needle.path, 
+      (hm.haystack.path, { needle_line = hm.needle.line; 
+                           haystack_line = hm.haystack.line }))
+  ) in
+  let needle_key_name = Base.Hashtbl.of_alist_multi (module Base.String) tups in
+  Base.Hashtbl.map needle_key_name ~f:(Base.Hashtbl.of_alist_multi (module Base.String))
 end
 
 let by_file hash_locations = begin
