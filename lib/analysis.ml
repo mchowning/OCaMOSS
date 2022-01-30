@@ -59,15 +59,38 @@ let hash_matches_to_table (hms: hashMatch list) = begin
   Base.Hashtbl.map needle_key_name ~f:(Base.Hashtbl.of_alist_multi (module Base.String))
 end
 
+let sort_haystack_tbl_by_num_matches (name1, as1) (name2, as2)=
+  let n1 = List.length as1 in
+  let n2 = List.length as2 in
+  if (n1 != n2) then
+    compare n2 n1
+  else
+    compare name1 name2
+
+let sort_needle_by_num_matches (needle1, haystack_tbl1) (needle2, haystack_tbl2) =
+  let n_matches tbl = 
+    let haystacks = Base.Hashtbl.to_alist tbl in
+    Base.List.sum (module Base.Int) haystacks ~f:(fun (_, matches) -> List.length matches) 
+  in
+  let n_matches_1 = n_matches haystack_tbl1 in
+  let n_matches_2 = n_matches haystack_tbl2 in
+  if (n_matches_1 != n_matches_2) then
+    compare n_matches_2 n_matches_1
+  else
+    compare needle1 needle2
+
 let hash_match_table_print needles_tb hm_tbl =
   print_endline "\nRESULTS";
   let needles = Base.Hashtbl.to_alist hm_tbl in
-  Base.List.iter needles ~f:(fun (needle, haystack_tbl) -> 
+  let sorted_needles = List.sort sort_needle_by_num_matches needles in
+  Base.List.iter sorted_needles ~f:(fun (needle, haystack_tbl) -> 
+    Printf.printf "\n%s\n" needle;
     let haystacks = Base.Hashtbl.to_alist haystack_tbl in
-    Base.List.iter haystacks ~f:(fun (haystack, matches) -> 
+    let sorted_haystacks = List.sort sort_haystack_tbl_by_num_matches haystacks in
+    Base.List.iter sorted_haystacks ~f:(fun (haystack, matches) -> 
       let total = Hashtbl.find needles_tb needle |> List.length in
       let num_matches = List.length matches in
-      Printf.printf "\n%4d / %-4d  %s\n             %s\n%!" num_matches total needle haystack;
+      Printf.printf "%5d / %-5d  %s\n%!" num_matches total haystack;
     )
   )
 
