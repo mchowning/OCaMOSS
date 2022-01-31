@@ -2,7 +2,7 @@ open OUnit2
 open OCaMossLib
 
 let location_to_string (l: Analysis.locations) = 
-  "{ " ^ Int.to_string l.needle_line ^ "; " ^ Int.to_string l.haystack_line ^ " }"
+  "{ " ^ Int.to_string l.needle_index ^ "; " ^ Int.to_string l.haystack_index ^ " }"
 let list_printer l_printer ls =
   let strings = List.map l_printer ls in
   let items = String.concat ";\n" strings in
@@ -27,9 +27,9 @@ let base_hashtbl_printer tbl =
 
 let hashMatch_printer (hm: Analysis.hashMatch) =
   "{ " ^ "needle_path: " ^ hm.needle.path ^ ", " 
-       ^ "needle_hash: " ^ Int.to_string hm.needle.line ^ ", " 
+       ^ "needle_hash: " ^ Int.to_string hm.needle.index ^ ", " 
        ^ "haystack_path: " ^ hm.haystack.path ^ ", "
-       ^ "haystack_hash: " ^ Int.to_string hm.haystack.line ^
+       ^ "haystack_hash: " ^ Int.to_string hm.haystack.index ^
   " }"
 
 let matches_needles _ =
@@ -68,14 +68,14 @@ let matches_needles _ =
   let actual = Analysis.find_matches input_needles input_haystack in
 
   let expected: Analysis.hashMatch list = [
-    { needle = { path = "a"; line = 1; };
-      haystack = { path = "aa"; line = 10 };};
-    { needle = { path = "c"; line = 1; };
-      haystack = { path = "aa"; line = 10 };};
-    { needle = { path = "c"; line = 2; };
-      haystack = { path = "bb"; line = 20 };};
-    { needle = { path = "c"; line = 3; };
-      haystack = { path = "aa"; line = 30 };};
+    { needle = { path = "a"; index = 1; };
+      haystack = { path = "aa"; index = 10 };};
+    { needle = { path = "c"; index = 1; };
+      haystack = { path = "aa"; index = 10 };};
+    { needle = { path = "c"; index = 2; };
+      haystack = { path = "bb"; index = 20 };};
+    { needle = { path = "c"; index = 3; };
+      haystack = { path = "aa"; index = 30 };};
   ] in
 
   assert_equal ~printer:(list_printer hashMatch_printer) expected actual
@@ -83,16 +83,16 @@ let matches_needles _ =
 let hash_matches_to_table _ =
 
   let (input: Analysis.hashMatch list) = [
-    { needle = { path = "a"; line = 1; };
-      haystack = { path = "aa"; line = 10 };};
-    { needle = { path = "c"; line = 1; };
-      haystack = { path = "aa"; line = 10 };};
-    { needle = { path = "c"; line = 2; };
-      haystack = { path = "bb"; line = 20 };};
-    { needle = { path = "c"; line = 1; };
-      haystack = { path = "bb"; line = 30 };};
-    { needle = { path = "c"; line = 3; };
-      haystack = { path = "aa"; line = 40 };};
+    { needle = { path = "a"; index = 1; };
+      haystack = { path = "aa"; index = 10 };};
+    { needle = { path = "c"; index = 1; };
+      haystack = { path = "aa"; index = 10 };};
+    { needle = { path = "c"; index = 2; };
+      haystack = { path = "bb"; index = 20 };};
+    { needle = { path = "c"; index = 1; };
+      haystack = { path = "bb"; index = 30 };};
+    { needle = { path = "c"; index = 3; };
+      haystack = { path = "aa"; index = 40 };};
   ] in
   let actual = Analysis.hash_matches_to_table input in
 
@@ -112,7 +112,7 @@ let hash_matches_to_table _ =
     Base.Hashtbl.map first_level ~f:(fun ls ->
       let inner = Base.Hashtbl.of_alist_multi (module Base.String) ls in
       Base.Hashtbl.map inner ~f:(fun inners ->
-        Base.List.map inners ~f:(fun (needle_line, haystack_line) -> ({ needle_line; haystack_line }: Analysis.locations))
+        Base.List.map inners ~f:(fun (needle_index, haystack_index) -> ({ needle_index; haystack_index }: Analysis.locations))
     ))
   in
 
@@ -123,7 +123,7 @@ let hash_matches_to_table _ =
       Base.Hashtbl.equal 
         (fun locs1 locs2 -> 
           Base.List.equal (fun (loc1: Analysis.locations) loc2 ->
-            loc1.needle_line = loc2.needle_line && loc1.haystack_line = loc2.haystack_line
+            loc1.needle_index = loc2.needle_index && loc1.haystack_index = loc2.haystack_index
           ) locs1 locs2
         ) sub_tbl1 sub_tbl2
     ) tbl1 tbl2 

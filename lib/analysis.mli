@@ -1,11 +1,11 @@
 type hashLocation = {
   path: string;
-  line: int;
+  index: int;
 }
 
 type locations = {
-  needle_line: int;
-  haystack_line: int;
+  needle_index: int;
+  haystack_index: int;
 }
 
 type hashMatch = {
@@ -22,4 +22,5 @@ val hash_matches_to_table: hashMatch list
 
 val analyze: (string, Winnowing.fingerprint list) Hashtbl.t 
           -> (string, Winnowing.fingerprint list) Hashtbl.t 
+          -> string option
           -> unit

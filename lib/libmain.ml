@@ -53,12 +53,15 @@ let libmain_func () =
   let haystack_arg = ref "" in
   let guarantee_threshold = ref 70 in
   let min_threshold = ref 30 in
+  let json_filename = ref "" in
 
   let speclist =
     [("--needles", Arg.Set_string needle_arg, "[filename or directory] Set base for comparison");
      ("--haystack", Arg.Set_string haystack_arg, "[filename or directory] Set destination to search for matches");
      ("--guarantee_threshold", Arg.Set_int guarantee_threshold, "[number] After removing noise, files with at least this many matching consecutive characters are guaranteed to be identified");
-     ("--min_threshold", Arg.Set_int min_threshold, "[number] After removing noise, files without this many matching consecutive characters will NOT be identified")] in
+     ("--min_threshold", Arg.Set_int min_threshold, "[number] After removing noise, files without this many matching consecutive characters will NOT be identified");
+     ("--json", Arg.Set_string json_filename, "[filename] Write JSON output to this file")
+     ] in
 
   let anon_arg_fun arg =
     Printf.printf "Unexpected anonymous argument of: %s\n%!" arg;
@@ -75,4 +78,8 @@ let libmain_func () =
   let needles = parse_fun !needle_arg in
   let haystack = parse_fun !haystack_arg in
 
-  Analysis.analyze needles haystack;
+  let json = match !json_filename with
+    | "" -> None
+    | filename -> Some filename 
+  in
+  Analysis.analyze needles haystack json;
