@@ -13,14 +13,14 @@ type hashMatch = {
   haystack: hashLocation;
 }
 
-val find_matches: (string, Winnowing.fingerprint list) Hashtbl.t
-               -> (string, Winnowing.fingerprint list) Hashtbl.t 
+val find_matches: (string, Winnowing.fingerprint list) Base.Hashtbl.t
+               -> (string, Winnowing.fingerprint list) Base.Hashtbl.t 
                -> hashMatch list
 
 val hash_matches_to_table: hashMatch list
                         -> (string, (string, locations list) Base.Hashtbl.t) Base.Hashtbl.t
 
-val analyze: (string, Winnowing.fingerprint list) Hashtbl.t 
-          -> (string, Winnowing.fingerprint list) Hashtbl.t 
+val analyze: (string, Winnowing.fingerprint list) Base.Hashtbl.t 
+          -> (string, Winnowing.fingerprint list) Base.Hashtbl.t 
           -> string option
           -> unit

@@ -14,7 +14,7 @@ type hashMatch = {
 }
 
 let convertToHashDict fileHashDict = begin
-  let result = Hashtbl.create 10000 in
+  (* let result = Hashtbl.create 10000 in
   Hashtbl.iter (fun path fingerprints ->
     List.iter (fun (fingerprint: Winnowing.fingerprint) -> 
       let newLocation = { path; index = fingerprint.location } in
@@ -24,14 +24,26 @@ let convertToHashDict fileHashDict = begin
       Hashtbl.add result fingerprint.hash newValue;
     ) fingerprints
   ) fileHashDict;
+  result *)
+
+  let result = Base.Hashtbl.create (module Base.Int) in
+  Base.Hashtbl.iteri fileHashDict ~f:(fun ~key:path ~data:fingerprints ->
+    List.iter (fun (fingerprint: Winnowing.fingerprint) -> 
+      let newLocation = { path; index = fingerprint.location } in
+      let newValue = match (Base.Hashtbl.find result fingerprint.hash) with
+            | None -> [newLocation]
+            | Some ls -> newLocation :: ls in
+      Base.Hashtbl.set result ~key:fingerprint.hash ~data:newValue
+    ) fingerprints
+  );
   result
 end
 
 let find_matches needles haystack = begin
   let haystackHashDict = convertToHashDict haystack in
-  Hashtbl.fold (fun needle_path needle_fingerprints acc ->
+  Base.Hashtbl.fold needles ~init:[] ~f:(fun ~key:needle_path ~data:needle_fingerprints acc ->
     let matches = List.concat_map (fun (fingerprint: Winnowing.fingerprint) ->
-      match (Hashtbl.find_opt haystackHashDict fingerprint.hash) with
+      match (Base.Hashtbl.find haystackHashDict fingerprint.hash) with
 
         (* No matching hashes in the haystack *)
         | None -> []
@@ -46,7 +58,7 @@ let find_matches needles haystack = begin
 
     ) needle_fingerprints in
     acc @ matches
-  ) needles [];
+  );
 end
 
 let hash_matches_to_table (hms: hashMatch list) = begin
@@ -93,7 +105,7 @@ let sort_needle_by_num_matches (needle1, haystack_tups1) (needle2, haystack_tups
       compare needle1 needle2
 
 
-let hash_match_table_json_file json_filename needles_tb hm_tbl = 
+let hash_match_table_json_file json_filename needles_fingerprint_tbl hm_fingeprint_tbl hm_tbl = 
   let needles = Base.Hashtbl.to_alist hm_tbl in
   let needles_with_tup = Base.List.map needles ~f:(fun (needle, haystack_tbl) ->
     let haystacks = Base.Hashtbl.to_alist haystack_tbl in
@@ -117,7 +129,8 @@ let hash_match_table_json_file json_filename needles_tb hm_tbl =
 (* I'm also missing similar information for each haystack file *)
 
   let open Yojson in
-    let manual_json = `List 
+
+    (* let manual_json = `List 
       (Base.List.map flattened ~f:(fun (hm: hashMatch) -> 
         `Assoc [
           ("needle_path", `String hm.needle.path);
@@ -127,20 +140,46 @@ let hash_match_table_json_file json_filename needles_tb hm_tbl =
         ]
       )) in
       (* Printf.printf "%s" (Yojson.to_string manual_json) *)
-      Yojson.to_file (json_filename ^ ".json") manual_json
+      Yojson.to_file (json_filename ^ ".json") manual_json *)
 
-let hash_match_table_print json needles_tb hm_tbl =
+    let matches = `List 
+      (Base.List.map flattened ~f:(fun (hm: hashMatch) -> 
+        `Assoc [
+          ("needle_path", `String hm.needle.path);
+          ("needle_index", `Int hm.needle.index);
+          ("haystack_path", `String hm.haystack.path);
+          ("haystack_index", `Int hm.haystack.index)
+        ]
+      )) in
+      (* Printf.printf "%s" (Yojson.to_string manual_json) *)
 
-  (match json with
-   | None -> ()
-   | Some json_filename -> hash_match_table_json_file json_filename needles_tb hm_tbl);
+    let file_object tb = 
+      let alist = Base.Hashtbl.to_alist tb in
+      `Assoc (Base.List.map alist ~f:(fun (file, (fingerprints: Winnowing.fingerprint list)) -> 
+        (file, `List (Base.List.map fingerprints ~f:(fun fingerprint -> 
+          `Assoc [
+            ("hash", `Int fingerprint.hash);
+            ("location", `Int fingerprint.location) ]
+      ))))) in
+
+    let needle_files = file_object needles_fingerprint_tbl in
+    let haystack_files = file_object hm_fingeprint_tbl in
+
+    let output = `Assoc [
+      ("needle_files", needle_files);
+      ("haystack_files", haystack_files);
+      ("matches", matches)
+    ] in
+    Yojson.to_file (json_filename ^ ".json") output
+
+let hash_match_table_print needles_tb hm_tbl =
 
   print_endline "\nRESULTS";
   let needles = Base.Hashtbl.to_alist hm_tbl in
   let needles_with_tup = Base.List.map needles ~f:(fun (needle, haystack_tbl) ->
     let haystacks = Base.Hashtbl.to_alist haystack_tbl in
     let haystacks_with_total = Base.List.map haystacks ~f:(fun (haystack, matches) ->
-      let total = Hashtbl.find needles_tb needle |> List.length in
+      let total = Base.Hashtbl.find_exn needles_tb needle |> List.length in
       (haystack, matches, total)
     ) in
     (needle, haystacks_with_total)
@@ -150,14 +189,23 @@ let hash_match_table_print json needles_tb hm_tbl =
     Printf.printf "\n%s\n" needle;
     let sorted_haystacks = List.sort sort_haystack_tup_by_match_ratio haystack_tup in
     Base.List.iter sorted_haystacks ~f:(fun (haystack, matches, total) -> 
-      (* let total = Hashtbl.find needles_tb needle |> List.length in *)
       let num_matches = List.length matches in
       Printf.printf "%5d / %-5d  %s\n%!" num_matches total haystack;
     )
   )
 
-let analyze needles haystack json =
+let handle_io json needles_tbl haystack_tbl hm_tbl =
+  (match json with
+   | None -> ()
+   | Some json_filename -> hash_match_table_json_file json_filename needles_tbl haystack_tbl hm_tbl);
+  hash_match_table_print needles_tbl hm_tbl
+
+let analyze 
+  (needles: (string, Winnowing.fingerprint list) Base.Hashtbl.t) 
+  (haystack: (string, Winnowing.fingerprint list) Base.Hashtbl.t) 
+  json =
+(* let analyze needles haystack json = *)
+(* let analyze (needles: (string, Winnowing.fingerprint list)) haystack json = *)
   find_matches needles haystack 
     |> hash_matches_to_table 
-    |> hash_match_table_print json needles
-    (* |> hash_match_table_json_file needles  *)
+    |> handle_io json needles haystack

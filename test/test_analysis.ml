@@ -34,23 +34,23 @@ let hashMatch_printer (hm: Analysis.hashMatch) =
 
 let matches_needles _ =
 
-  let input_needles: (string, Winnowing.fingerprint list) Hashtbl.t = Hashtbl.create 5 in
-  Hashtbl.add input_needles "a" [ 
+  let input_needles: (string, Winnowing.fingerprint list) Base.Hashtbl.t = Base.Hashtbl.create (module Base.String) in
+  Base.Hashtbl.add_exn input_needles ~key:"a" ~data:[ 
     { hash = 1; location = 1 }; 
     { hash = 11; location = 2 } 
   ];
-  Hashtbl.add input_needles "b" [ 
+  Base.Hashtbl.add_exn input_needles ~key:"b" ~data:[ 
     { hash = 10; location = 1 }; 
     { hash = 11; location = 2 } 
   ];
-  Hashtbl.add input_needles "c" [ 
+  Base.Hashtbl.add_exn input_needles ~key:"c" ~data:[ 
     { hash = 1; location = 1 }; 
     { hash = 2; location = 2 }; 
     { hash = 3; location = 3 } 
   ];
 
-  let input_haystack: (string, Winnowing.fingerprint list) Hashtbl.t = Hashtbl.create 5 in
-  Hashtbl.add input_haystack "aa" [ 
+  let input_haystack: (string, Winnowing.fingerprint list) Base.Hashtbl.t = Base.Hashtbl.create (module Base.String) in
+  Base.Hashtbl.add_exn input_haystack ~key:"aa" ~data:[ 
     { hash = 1; location = 10 }; 
     { hash = 3; location = 30 }; 
     { hash = 5; location = 50 }; 
@@ -58,7 +58,7 @@ let matches_needles _ =
     { hash = 9; location = 90 }
   ];
 
-  Hashtbl.add input_haystack "bb" [ 
+  Base.Hashtbl.add_exn input_haystack ~key:"bb" ~data:[ 
     { hash = 2; location = 20 };
     { hash = 4; location = 40 };
     { hash = 6; location = 60 };
