@@ -153,21 +153,26 @@ let hash_match_table_json_file json_filename needles_fingerprint_tbl hm_fingepri
       )) in
       (* Printf.printf "%s" (Yojson.to_string manual_json) *)
 
-    let file_object tb = 
+    let file_object tb file_type = 
       let alist = Base.Hashtbl.to_alist tb in
-      `Assoc (Base.List.map alist ~f:(fun (file, (fingerprints: Winnowing.fingerprint list)) -> 
-        (file, `List (Base.List.map fingerprints ~f:(fun fingerprint -> 
+      Base.List.map alist ~f:(fun (file, (fingerprints: Winnowing.fingerprint list)) -> 
+        (* (file, `List (Base.List.map fingerprints ~f:(fun fingerprint -> 
           `Assoc [
             ("hash", `Int fingerprint.hash);
             ("location", `Int fingerprint.location) ]
-      ))))) in
+        ))) *)
+        let total = List.length fingerprints in
+        (file, `Assoc [
+          ("type", `String file_type);
+          ("total", `Int total)]
+      )) in
 
-    let needle_files = file_object needles_fingerprint_tbl in
-    let haystack_files = file_object hm_fingeprint_tbl in
+    let needle_files = file_object needles_fingerprint_tbl "needle" in
+    let haystack_files = file_object hm_fingeprint_tbl "haystack" in
+    let files = `Assoc (needle_files @ haystack_files) in
 
     let output = `Assoc [
-      ("needle_files", needle_files);
-      ("haystack_files", haystack_files);
+      ("files", files);
       ("matches", matches)
     ] in
     Yojson.to_file (json_filename ^ ".json") output
