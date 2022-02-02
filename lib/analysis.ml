@@ -125,23 +125,7 @@ let hash_match_table_json_file json_filename needles_fingerprint_tbl hm_fingepri
     )
   ) in
 
-(* FIXME: I'm losing some totals information about all the possible matches for a given needle from the needles tb *)
-(* I'm also missing similar information for each haystack file *)
-
   let open Yojson in
-
-    (* let manual_json = `List 
-      (Base.List.map flattened ~f:(fun (hm: hashMatch) -> 
-        `Assoc [
-          ("needle_path", `String hm.needle.path);
-          ("needle_index", `Int hm.needle.index);
-          ("haystack_path", `String hm.haystack.path);
-          ("haystack_index", `Int hm.haystack.index)
-        ]
-      )) in
-      (* Printf.printf "%s" (Yojson.to_string manual_json) *)
-      Yojson.to_file (json_filename ^ ".json") manual_json *)
-
     let matches = `List 
       (Base.List.map flattened ~f:(fun (hm: hashMatch) -> 
         `Assoc [
@@ -151,16 +135,10 @@ let hash_match_table_json_file json_filename needles_fingerprint_tbl hm_fingepri
           ("haystack_index", `Int hm.haystack.index)
         ]
       )) in
-      (* Printf.printf "%s" (Yojson.to_string manual_json) *)
 
     let file_object tb file_type = 
       let alist = Base.Hashtbl.to_alist tb in
       Base.List.map alist ~f:(fun (file, (fingerprints: Winnowing.fingerprint list)) -> 
-        (* (file, `List (Base.List.map fingerprints ~f:(fun fingerprint -> 
-          `Assoc [
-            ("hash", `Int fingerprint.hash);
-            ("location", `Int fingerprint.location) ]
-        ))) *)
         let total = List.length fingerprints in
         (file, `Assoc [
           ("type", `String file_type);
