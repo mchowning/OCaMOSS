@@ -84,4 +84,4 @@ let libmain_func () =
     | "" -> None
     | filename -> Some filename 
   in
-  Analysis.analyze needles haystack json;
+  Analysis.analyze needles haystack !needle_arg !haystack_arg json;

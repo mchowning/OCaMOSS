@@ -22,5 +22,7 @@ val hash_matches_to_table: hashMatch list
 
 val analyze: (string, Winnowing.fingerprint list) Base.Hashtbl.t 
           -> (string, Winnowing.fingerprint list) Base.Hashtbl.t 
+          -> string
+          -> string
           -> string option
           -> unit
