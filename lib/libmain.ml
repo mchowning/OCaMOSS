@@ -84,4 +84,10 @@ let libmain_func () =
     | "" -> None
     | filename -> Some filename 
   in
-  Analysis.analyze needles haystack !needle_arg !haystack_arg json;
+  let (analysis_info: Analysis.analysis_info) = {
+    needles_path = !needle_arg;
+    haystack_path = !haystack_arg;
+    guarantee_threshold = !guarantee_threshold;
+    min_threshhold = !min_threshold;
+  } in
+  Analysis.analyze needles haystack json analysis_info;

@@ -13,6 +13,13 @@ type hashMatch = {
   haystack: hashLocation;
 }
 
+type analysis_info = {
+  needles_path: string;
+  haystack_path: string;
+  guarantee_threshold: int;
+  min_threshhold: int;
+}
+
 val find_matches: (string, Winnowing.fingerprint list) Base.Hashtbl.t
                -> (string, Winnowing.fingerprint list) Base.Hashtbl.t 
                -> hashMatch list
@@ -22,7 +29,6 @@ val hash_matches_to_table: hashMatch list
 
 val analyze: (string, Winnowing.fingerprint list) Base.Hashtbl.t 
           -> (string, Winnowing.fingerprint list) Base.Hashtbl.t 
-          -> string
-          -> string
           -> string option
+          -> analysis_info
           -> unit

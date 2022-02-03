@@ -13,6 +13,19 @@ type hashMatch = {
   haystack: hashLocation;
 }
 
+type analysis_info = {
+  needles_path: string;
+  haystack_path: string;
+  guarantee_threshold: int;
+  min_threshhold: int;
+}
+
+    (* |> handle_io ~json_filename:json_filename 
+                 ~needles_fingerprint_tbl:shortened_needles 
+                 ~needles_path:needles_path_with_trailing_slash
+                 ~haystack_fingerprint_tbl:shortened_haystack 
+                 ~haystack_path:haystack_path_with_trailing_slash *)
+
 let convertToHashDict fileHashDict = begin
   (* let result = Hashtbl.create 10000 in
   Hashtbl.iter (fun path fingerprints ->
@@ -105,11 +118,16 @@ let sort_needle_by_num_matches (needle1, haystack_tups1) (needle2, haystack_tups
       compare needle1 needle2
 
 
-let hash_match_table_json_file ~json_filename:json_filename 
+(* let hash_match_table_json_file ~json_filename:json_filename 
                                ~needles_fingerprint_tbl:needles_fingerprint_tbl 
                                ~needles_path:needles_path
                                ~haystack_fingerprint_tbl:haystack_fingeprint_tbl 
                                ~haystack_path:haystack_path
+                               ~hm_tbl:hm_tbl =  *)
+let hash_match_table_json_file ~json_filename:json_filename
+                               ~analysis_info:(info: analysis_info)
+                               ~needles_fingerprint_tbl:needles_fingerprint_tbl 
+                               ~haystack_fingerprint_tbl:haystack_fingeprint_tbl 
                                ~hm_tbl:hm_tbl = 
   let needles = Base.Hashtbl.to_alist hm_tbl in
   let needles_with_tup = Base.List.map needles ~f:(fun (needle, haystack_tbl) ->
@@ -154,10 +172,14 @@ let hash_match_table_json_file ~json_filename:json_filename
     let haystack_files = file_object haystack_fingeprint_tbl "haystack" in
 
     let output = `Assoc [
+      ("config", `Assoc [
+        ("guarantee_threshold", `Int info.guarantee_threshold);
+        ("min_threshold", `Int info.min_threshhold)
+      ]);
       ("files", `Assoc [
         ("paths", `Assoc [
-          ("neeedles", `String needles_path);
-          ("haystack", `String haystack_path)
+          ("neeedles", `String info.needles_path);
+          ("haystack", `String info.haystack_path)
         ]);
         ("needles", `Assoc needle_files);
         ("haystack", `Assoc haystack_files)
@@ -189,18 +211,16 @@ let hash_match_table_print needles_tb hm_tbl =
   )
 
 let handle_io ~json_filename:json_filename 
+              ~analsysi_info:info
               ~needles_fingerprint_tbl:needles_fingerprint_tbl 
-              ~needles_path:needles_path 
               ~haystack_fingerprint_tbl:haystack_fingerprint_tbl 
-              ~haystack_path:haystack_path 
               hm_tbl =
   (match json_filename with
    | None -> ()
    | Some json_filename -> hash_match_table_json_file ~json_filename:json_filename 
+                                                      ~analysis_info:info
                                                       ~needles_fingerprint_tbl:needles_fingerprint_tbl 
-                                                      ~needles_path:needles_path 
                                                       ~haystack_fingerprint_tbl:haystack_fingerprint_tbl 
-                                                      ~haystack_path:haystack_path 
                                                       ~hm_tbl:hm_tbl);
   hash_match_table_print needles_fingerprint_tbl hm_tbl
 
@@ -226,9 +246,8 @@ let update_keys tbl ~f:f =
 let analyze 
   (needles: (string, Winnowing.fingerprint list) Base.Hashtbl.t) 
   (haystack: (string, Winnowing.fingerprint list) Base.Hashtbl.t) 
-  needles_path
-  haystack_path
-  json_filename =
+  (json_filename: string option)
+  (info: analysis_info) =
 
   (* let prefix_remove_and_add ~remove:remove ~add:add s = add ^ (Base.String.chop_prefix_exn s ~prefix:remove) in *)
 
@@ -240,8 +259,8 @@ let analyze
     then p
     else p ^ "/" in
 
-  let needles_path_with_trailing_slash = path_with_trailing_slash needles_path in
-  let haystack_path_with_trailing_slash = path_with_trailing_slash haystack_path in
+  let needles_path_with_trailing_slash = path_with_trailing_slash info.needles_path in
+  let haystack_path_with_trailing_slash = path_with_trailing_slash info.haystack_path in
 
 
   let shortened_needles = update_keys needles ~f:(Base.String.chop_prefix_exn ~prefix:needles_path_with_trailing_slash) in
@@ -250,7 +269,6 @@ let analyze
   find_matches shortened_needles shortened_haystack 
     |> hash_matches_to_table 
     |> handle_io ~json_filename:json_filename 
+                 ~analsysi_info:info
                  ~needles_fingerprint_tbl:shortened_needles 
-                 ~needles_path:needles_path_with_trailing_slash
                  ~haystack_fingerprint_tbl:shortened_haystack 
-                 ~haystack_path:haystack_path_with_trailing_slash
