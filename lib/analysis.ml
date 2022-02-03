@@ -173,14 +173,16 @@ let hash_match_table_json_file ~json_filename:json_filename
 
     let output = `Assoc [
       ("config", `Assoc [
-        ("guarantee_threshold", `Int info.guarantee_threshold);
-        ("min_threshold", `Int info.min_threshhold)
-      ]);
-      ("files", `Assoc [
         ("paths", `Assoc [
           ("neeedles", `String info.needles_path);
           ("haystack", `String info.haystack_path)
         ]);
+        ("thresholds", `Assoc [
+          ("guarantee", `Int info.guarantee_threshold);
+          ("min", `Int info.min_threshhold);
+        ]);
+      ]);
+      ("files", `Assoc [
         ("needles", `Assoc needle_files);
         ("haystack", `Assoc haystack_files)
       ]);
