@@ -1,7 +1,6 @@
 open OUnit2
 open OCaMossLib.Winnowing
-(* open Winnowing *)
-(* open OCaMoss.Winnowing *)
+open OCaMossLib
 
 (* helper function for sorting winnowing results (int*int) list representing
  * hash * position tuples sorts from least to greatest, by hash value first,
@@ -18,11 +17,18 @@ let sort_results r =
  * inputs: (int * int) list representing winnowing results
  * returns: a string representation of the hashes contained in the input
  * side effects: prints the string that is created *)
-let res_to_string r =
-  r |> List.map (fun x -> x.hash) |> List.map (string_of_int) |>
-  List.fold_left (fun a x -> a ^ x ^ ",") ""
+let res_to_string (r: Preprocessing.indexed_hash list) =
+  (* r |> List.map (fun (x: Preprocessing.indexed_hash) -> x.hash) |> List.map (string_of_int) |>
+  List.fold_left (fun a x -> a ^ x ^ ",") "" *)
 
-let list_to_fingerprint (h,l) = { hash = h; location = l}
+  Base.List.fold r ~init:"" ~f:(fun acc ihash -> acc ^ Base.Int.to_string (ihash.hash) ^ ",")
+
+let list_to_hash_match (hash, start_index, end_index) = ({ hash; start_index; end_index }: Preprocessing.indexed_hash)
+
+(* helper function for converting results to strings
+ * inputs: (int * int) list representing winnowing results
+ * returns: a string representation of the hashes contained in the input
+ * side effects: prints the string that is created *)
 
 (* Non-trivial test cases generated with a Python implementation of the same
  * algorithm *)
@@ -65,29 +71,40 @@ let t4 = [-776;271;540;-580;-710;803;690;980;611;-305;252;-404;-377;544;-982;
 let r4 = "-776,-982,-995,-989,-979,-941,-770,-891,-892,-936,-869,"
 
 (* tests to check Winnowing functionality *)
+
+let n_to_winnow_input n = ({ hash = n; start_index = 0; end_index = 1}: Preprocessing.indexed_hash)
+
+let test_winnow n ns =
+  let input = Base.List.map ns~f:n_to_winnow_input in
+  winnow n input
+
+let indexed_hash_to_string (ihash: Preprocessing.indexed_hash) = 
+  "{ hash = " ^ string_of_int (ihash.hash) ^ 
+  "; start_index = " ^ string_of_int (ihash.start_index) ^ 
+  "; end_index = " ^ string_of_int (ihash.end_index) ^ " }"
+
+let indexed_hash_ls_to_string (ihash_ls: Preprocessing.indexed_hash list) = 
+  "[ " ^ List.fold_left (fun a x -> a ^ indexed_hash_to_string x ^ "; ") "" ihash_ls ^ " ];"
+
 let tests = [
-  "winnow0" >:: (fun _ -> assert_equal "" (winnow 1 [] |> res_to_string));
-  "winnow1" >:: (fun _ -> assert_equal "1," (winnow 1 [1] |> res_to_string));
-  "winnow2" >:: (fun _ -> assert_equal "1,2,3,4,5," (winnow 1 [1;2;3;4;5]
+  (* "winnow0" >:: (fun _ -> assert_equal "" (test_winnow 1 [] |> res_to_string));
+  "test_winnow1" >:: (fun _ -> assert_equal ~printer:(fun s -> s) "1," (test_winnow 1 [1] |> res_to_string));
+  "test_winnow2" >:: (fun _ -> assert_equal "1,2,3,4,5," (test_winnow 1 [1;2;3;4;5]
                                                      |> res_to_string));
-  "winnow3" >:: (fun _ -> assert_equal "5,4,3,2,1," (winnow 1 [5;4;3;2;1]
+  "test_winnow3" >:: (fun _ -> assert_equal "5,4,3,2,1," (test_winnow 1 [5;4;3;2;1]
                                                      |> res_to_string));
-  "winnow4" >:: (fun _ -> assert_equal "5,4,3,2,1," (winnow 1 [5;4;3;2;1]
+  "test_winnow4" >:: (fun _ -> assert_equal "5,4,3,2,1," (test_winnow 1 [5;4;3;2;1]
                                                      |> res_to_string));
-  "winnow5" >:: (fun _ -> assert_equal "1,2,3,4," (winnow 2 [1;2;3;4;5]
-                                                   |> res_to_string));
-  (* These test cases are inaccurate *)
-  (* "winnow6" >:: (fun _ -> assert_equal r1 (winnow 5 t1 |> res_to_string));
-  "winnow7" >:: (fun _ -> assert_equal r2 (winnow 10 t2 |> res_to_string));
-  "winnow8" >:: (fun _ -> assert_equal r3 (winnow 5 t3 |> res_to_string));
-  "winnow9" >:: (fun _ -> assert_equal r4 (winnow 20 t4 |> res_to_string)); *)
+  "test_winnow5" >:: (fun _ -> assert_equal "1,2,3,4," (test_winnow 2 [1;2;3;4;5]
+                                                   |> res_to_string)); *)
 
   (* Based on example in section 3 of: http://theory.stanford.edu/~aiken/publications/papers/sigmod03.pdf 
      Example modified to reflect robust winnowing *)
   "winnow10" >:: (fun _ -> begin 
     let input = [77;74;42;17;98;50;17;98;8;88;67;39;77;74;42;17;98] in
-    let expected = List.map list_to_fingerprint [(17,3);(8,8);(39,11);(17,15)] in
-    let actual = winnow 4 input in
-    assert_equal expected actual
+    (* let expected = List.map list_to_hash_match [(17,3,100);(8,8,100);(39,11,100);(17,15,100)] in *)
+    let expected = Base.List.map [17;8;39;17] ~f:n_to_winnow_input in
+    let actual = test_winnow 4 input in
+    assert_equal ~printer:indexed_hash_ls_to_string expected actual
   end);
 ]

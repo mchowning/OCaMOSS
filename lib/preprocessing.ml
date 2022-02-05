@@ -1,4 +1,3 @@
-open Winnowing
 open Unix
 open Filename
 open Yojson.Basic.Util
@@ -16,6 +15,12 @@ type language_info = {
   special_chars: char list;
   comment_info: comment_info;
 }
+
+type char_with_pos = (char * int)
+type index_string = char_with_pos list
+
+
+let index_string_to_string (istr: index_string) = Base.String.of_char_list (Base.List.map istr ~f:fst)
 
 let get_language_info language_file = 
   (* Using this environment variable in tests because I need a different path there it seems *)
@@ -66,6 +71,28 @@ let rem_white_space code_string =
   String.split_on_char ' ' |>
   List.filter (fun str -> str <> "")
 
+let rem_white_space_tup (code_string: index_string) =
+  Base.List.fold code_string ~init:[] ~f:(fun acc (c, i) ->
+    let split = 
+      c == ' ' ||
+      c == '\t' ||
+      c == '\n' ||
+      c == '\r' in
+    if split then
+      acc @ [[(c,i)]]
+    else 
+      match acc with
+      | [] -> [[(c,i)]]
+      | (a :: rest) -> (a @ [(c,i)]) :: rest
+  )
+
+  (* code_string |>
+  String.split_on_char '\t' |> String.concat " " |>
+  String.split_on_char '\n' |> String.concat " " |>
+  String.split_on_char '\r' |> String.concat " " |>
+  String.split_on_char ' ' |>
+  List.filter (fun str -> str <> "") *)
+
 (* [split_and_keep_on_spec_chars spec_chars str] essentially does the same
  * thing as [String.split_on_char] for each character in [spec_char], except
  * each of the characters in [spec_char] are themselves an element in the
@@ -94,6 +121,26 @@ let split_and_keep_on_spec_chars spec_chars str =
                   else (s ^ C.to_string c) :: rest
               | _ -> (s ^ C.to_string c) :: rest
   end ) [] str
+  |> List.rev
+
+let split_and_keep_on_spec_chars_tup spec_chars (tup: (char * int) list) =
+  Base.List.fold tup ~init:[] ~f:(fun acc (c,i) -> begin
+    let is_special_char c = List.exists (fun x -> x == c) spec_chars in
+    let open C in
+    if is_special_char c
+    then [(c,i)] :: acc
+    else match acc with
+         (* | [] -> [C.to_string c] *)
+         | [] -> [[(c,i)]] 
+         | (s :: rest) ->
+              match s with
+              | [] -> raise (Failure "list should not have empty strings")
+              | [(c',_)] -> 
+                  if is_special_char c'
+                  then [(c,i)] :: acc
+                  else (s @ [(c,i)]) :: rest
+              | _ -> (s @ [(c,i)]) :: rest
+  end)
   |> List.rev
 
 (* [split_on_str str_to_split_on acc_str_arr str_to_split] splits up
@@ -195,6 +242,55 @@ let replace_generics keywords spec_chars str_arr =
          with Failure _ -> "v" )
     str_arr
 
+let replace_generics_tup (keywords: string list) spec_chars (istrs: index_string list) =
+  let member (str: string) (istr: index_string) = 
+    let (cs,_) = Base.List.unzip istr in
+    let str' = Base.String.of_char_list cs in
+    str == str' in
+
+  let any xs = Base.List.exists xs ~f:(fun x -> x) in
+
+  let any_member (strs: string list) (istr: index_string) =
+    List.exists (fun (str: string) ->
+      member str istr
+    ) strs in
+
+  let is_an_int (istr: index_string) = 
+    let str = Base.String.of_char_list (Base.List.map istr ~f:fst) in
+    Str.string_match (Str.regexp "[0-9]+") str 0
+  in
+
+  (* FIXME use fold *)
+  Base.List.map istrs ~f:(fun istr ->
+      let is_keyword = any_member keywords istr in
+      let is_spec_char = match istr with
+      | [(c,_)] -> any (Base.List.map spec_chars ~f:(fun sc -> sc = c))
+      | _ -> false in
+      
+      if is_keyword || is_spec_char 
+      then istr
+      else if is_an_int istr
+           then istr
+           else 
+            let index = match istr with
+            | [] -> failwith "empty list item in replace_generics_tup--this should never happen"
+            | ((_,i) :: _) -> i in
+            [('v', index)])
+      
+
+
+       (* if member keywords istr ||
+          ((String.length str = 1) && (List.mem (String.get str 0) spec_chars))
+       then str
+       else
+         try
+           int_of_string str |> string_of_int
+         with Failure _ -> "v" )
+    str_arr *)
+
+(* let flatten_index_strings ls =
+  Base.List.fold *)
+
 (* Refer to preprocessing.mli for this function's specifications *)
 let remove_noise comment_info code_string keywords spec_chars is_txt =
   if is_txt then code_string
@@ -237,7 +333,68 @@ let remove_noise comment_info code_string keywords spec_chars is_txt =
     (* |> print_and_pass "before concat" *)
     |> String.concat ""
 
+
+let remove_noise_tup comment_info (code_string_tup: index_string) keywords spec_chars is_txt =
+  if is_txt then code_string_tup
+  else
+    (* let rm_one_line_comment s =
+      if comment_info.single_comment = "" then s
+      else
+        remove_comments comment_info.single_comment "\n" false s
+        |> String.concat ""
+    in *)
+    (* let rm_mult_line_comment s =
+      if comment_info.multi_comment_start = "" then s
+      else
+        remove_comments comment_info.multi_comment_start comment_info.multi_comment_end comment_info.nest s
+        |> String.concat ""
+    in *)
+    (* let rm_strings s =
+      if comment_info.strings then remove_strings s |> String.concat ""
+      else s
+    in *)
+    let print_and_pass message input = begin
+      print_endline message;
+      input
+    end in
+    code_string_tup 
+    (* |> print_and_pass "before rm_strings" *)
+    (* |> rm_strings *)
+    (* |> print_and_pass "before rm_mult_line_comment" *)
+    (* |> rm_mult_line_comment  *)
+    (* |> print_and_pass "before rm_one_line_comment" *)
+    (* |> rm_one_line_comment *)
+    (* |> print_and_pass "before split_and_keep_on_spec_chars" *)
+    |> split_and_keep_on_spec_chars_tup spec_chars 
+    (* |> print_and_pass "before rem_white_space" *)
+    |> List.map rem_white_space_tup
+    (* |> print_and_pass "before flatten" *)
+
+    |> List.flatten 
+
+    (* |> print_and_pass "before replace_generics" *)
+
+    |> replace_generics_tup keywords spec_chars 
+
+    (* |> print_and_pass "before concat" *)
+
+    |> List.flatten
+    (* |> List.flatten *)
+    (* |> flatten_index_strings *)
+    (* |> String.concat "" *)
+
 (* Refer to preprocessing.mli for this function's specifications *)
+(* let rec k_grams s n =
+  let s_length = String.length s in
+  let rec helper s index acc =  
+    if index < 0
+    then acc
+    else
+      let gram = String.sub s index n in
+      helper s (index-1) (gram::acc)
+  in
+  helper s (s_length - n) [] *)
+
 let rec k_grams s n =
   let s_length = String.length s in
   let rec helper s index acc =  
@@ -248,6 +405,20 @@ let rec k_grams s n =
       helper s (index-1) (gram::acc)
   in
   helper s (s_length - n) []
+
+let rec k_grams_tup (is: index_string) n =
+  let s_length = List.length is in
+
+  let rec helper s index acc =  
+    if index < 0
+    then acc
+    else
+      let gram = Base.List.sub is ~pos:index ~len:n in
+      (* let gram = String.sub s index n in *)
+      helper s (index-1) (gram::acc)
+  in
+
+  helper is (s_length - n) []
 
 
 (* [determine_language_file f] returns the string that represents the name of
@@ -306,40 +477,43 @@ let get_ngrams f n =
     close_in f_channel;
     let is_txt = check_suffix f "txt" in
     let com_info = language.info.comment_info in
+
+    let chars = Base.String.to_list f_string in
+    let indices = Base.List.range 0 (List.length chars) in
+    let char_ints = Base.List.zip_exn chars indices in
     let noise_removed_str =
+      remove_noise_tup com_info char_ints keywords spec_chars is_txt in
+    let result = k_grams_tup noise_removed_str n in
+
+    (* let noise_removed_str =
       remove_noise com_info f_string keywords spec_chars is_txt in
-    let result = k_grams noise_removed_str n in
+    let result = k_grams noise_removed_str n in *)
+
     Some result
+
+type indexed_hash = {
+  hash: int;
+  start_index: int;
+  end_index: int;
+}
 
 (* Refer to preprocessing.mli for this function's specifications *)
 let hash_file min_threshold f = begin
   match (get_ngrams f min_threshold) with
   | None -> None
   | Some n_grams -> begin
-      Some (Base.List.map ~f:(fun h -> begin
+      (* Some (Base.List.map ~f:(fun h -> begin
         let result = Hashtbl.hash h in
         result
-      end) n_grams)
-  end
-  end
-
-(* Refer to preprocessing.mli for this function's specifications *)
-let rec get_file_positions dir dir_name filename positions =
-  try
-    let f_name = Unix.readdir dir in
-    if f_name <> filename then get_file_positions dir dir_name filename
-        positions
-    else begin
-      let f = dir_name ^ Filename.dir_sep ^ f_name in
-      match (get_ngrams f 35) with
-      | None -> []
-      | Some n_grams -> 
-        let results = List.map (fun x ->
-            (string_of_int x, List.nth n_grams (x - 1))
-          ) positions in
-        List.sort (fun a b ->
-            Stdlib.compare (snd a |> Hashtbl.hash) (snd b |> Hashtbl.hash)
-          ) results
+      end) n_grams) *)
+      Some (Base.List.map n_grams ~f:(fun istr -> begin
+        let str = index_string_to_string istr in
+        let hashed = Hashtbl.hash str in
+        let (_,start) = Base.List.hd_exn istr in
+        let (_,last) = Base.List.last_exn istr in
+        { hash = hashed; 
+          start_index = start; 
+          end_index = last }
+      end))
     end
-  with
-  | _ -> []
+  end

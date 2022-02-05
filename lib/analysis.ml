@@ -1,11 +1,17 @@
 type hashLocation = {
   path: string;
-  index: int;
+  start_index: int;
+  end_index: int
+}
+
+type location = {
+  start_index: int;
+  end_index: int
 }
 
 type locations = {
-  needle_index: int;
-  haystack_index: int;
+  needle: location;
+  haystack: location;
 }
 
 type hashMatch = {
@@ -27,36 +33,24 @@ type analysis_info = {
                  ~haystack_path:haystack_path_with_trailing_slash *)
 
 let convertToHashDict fileHashDict = begin
-  (* let result = Hashtbl.create 10000 in
-  Hashtbl.iter (fun path fingerprints ->
-    List.iter (fun (fingerprint: Winnowing.fingerprint) -> 
-      let newLocation = { path; index = fingerprint.location } in
-      let newValue = match (Hashtbl.find_opt result fingerprint.hash) with
-            | None -> [newLocation]
-            | Some ls -> newLocation :: ls in
-      Hashtbl.add result fingerprint.hash newValue;
-    ) fingerprints
-  ) fileHashDict;
-  result *)
-
   let result = Base.Hashtbl.create (module Base.Int) in
-  Base.Hashtbl.iteri fileHashDict ~f:(fun ~key:path ~data:fingerprints ->
-    List.iter (fun (fingerprint: Winnowing.fingerprint) -> 
-      let newLocation = { path; index = fingerprint.location } in
-      let newValue = match (Base.Hashtbl.find result fingerprint.hash) with
+  Base.Hashtbl.iteri fileHashDict ~f:(fun ~key:path ~data:ihash_ls ->
+    List.iter (fun (ihash: Preprocessing.indexed_hash) -> 
+      let newLocation = { path; start_index = ihash.start_index; end_index = ihash.end_index } in
+      let newValue = match (Base.Hashtbl.find result ihash.hash) with
             | None -> [newLocation]
             | Some ls -> newLocation :: ls in
-      Base.Hashtbl.set result ~key:fingerprint.hash ~data:newValue
-    ) fingerprints
+      Base.Hashtbl.set result ~key:ihash.hash ~data:newValue
+    ) ihash_ls
   );
   result
 end
 
-let find_matches needles haystack = begin
+let find_matches (needles: (string, Preprocessing.indexed_hash list) Base.Hashtbl.t) (haystack: (string, Preprocessing.indexed_hash list) Base.Hashtbl.t) = begin
   let haystackHashDict = convertToHashDict haystack in
   Base.Hashtbl.fold needles ~init:[] ~f:(fun ~key:needle_path ~data:needle_fingerprints acc ->
-    let matches = List.concat_map (fun (fingerprint: Winnowing.fingerprint) ->
-      match (Base.Hashtbl.find haystackHashDict fingerprint.hash) with
+    let matches = List.concat_map (fun (ihash: Preprocessing.indexed_hash) ->
+      match (Base.Hashtbl.find haystackHashDict ihash.hash) with
 
         (* No matching hashes in the haystack *)
         | None -> []
@@ -64,8 +58,12 @@ let find_matches needles haystack = begin
         (* Record matching hashes in the haystack *)
         | Some ls -> 
             List.map (fun haystack_location -> 
-              { needle = { path = needle_path; index = fingerprint.location }; 
-                haystack = { path = haystack_location.path; index = haystack_location.index };
+              { needle = { path = needle_path; 
+                           start_index = ihash.start_index; 
+                           end_index = ihash.end_index }; 
+                haystack = { path = haystack_location.path; 
+                             start_index = haystack_location.start_index; 
+                             end_index = haystack_location.end_index };
               }
             ) ls
 
@@ -77,8 +75,8 @@ end
 let hash_matches_to_table (hms: hashMatch list) = begin
   let tups = Base.List.map hms ~f:(fun hm ->
     (hm.needle.path, 
-      (hm.haystack.path, { needle_index = hm.needle.index; 
-                           haystack_index = hm.haystack.index }))
+      (hm.haystack.path, { needle = hm.needle;
+                           haystack = hm.haystack }))
   ) in
   let needle_key_name = Base.Hashtbl.of_alist_multi (module Base.String) tups in
   Base.Hashtbl.map needle_key_name ~f:(Base.Hashtbl.of_alist_multi (module Base.String))
@@ -126,8 +124,8 @@ let sort_needle_by_num_matches (needle1, haystack_tups1) (needle2, haystack_tups
                                ~hm_tbl:hm_tbl =  *)
 let hash_match_table_json_file ~json_filename:json_filename
                                ~analysis_info:(info: analysis_info)
-                               ~needles_fingerprint_tbl:needles_fingerprint_tbl 
-                               ~haystack_fingerprint_tbl:haystack_fingeprint_tbl 
+                               ~needles_tbl:needles_tbl 
+                               ~haystack_tbl:haystack_tbl 
                                ~hm_tbl:hm_tbl = 
   let needles = Base.Hashtbl.to_alist hm_tbl in
   let needles_with_tup = Base.List.map needles ~f:(fun (needle, haystack_tbl) ->
@@ -139,10 +137,12 @@ let hash_match_table_json_file ~json_filename:json_filename
       Base.List.map locations_list ~f:(fun locations ->
         { needle = 
             { path = needle; 
-              index = locations.needle_index };
+              start_index = locations.needle.start_index;
+              end_index = locations.needle.end_index };
           haystack = 
             { path = haystack; 
-              index = locations.haystack_index }
+              start_index = locations.haystack.start_index;
+              end_index = locations.haystack.end_index }
         }
       )
     )
@@ -152,24 +152,30 @@ let hash_match_table_json_file ~json_filename:json_filename
     let matches = `List 
       (Base.List.map flattened ~f:(fun (hm: hashMatch) -> 
         `Assoc [
-          ("needle_path", `String hm.needle.path);
-          ("needle_index", `Int hm.needle.index);
-          ("haystack_path", `String hm.haystack.path);
-          ("haystack_index", `Int hm.haystack.index)
+          ("needle", `Assoc [
+            ("path", `String hm.needle.path);
+            ("start_index", `Int hm.needle.start_index);
+            ("end_index", `Int hm.needle.end_index)
+          ]);
+          ("haystack", `Assoc [
+            ("path", `String hm.haystack.path);
+            ("start_index", `Int hm.haystack.start_index);
+            ("end_index", `Int hm.haystack.end_index)
+          ])
         ]
       )) in
 
     let file_object tb file_type = 
       let alist = Base.Hashtbl.to_alist tb in
-      Base.List.map alist ~f:(fun (file, (fingerprints: Winnowing.fingerprint list)) -> 
-        let total = List.length fingerprints in
+      Base.List.map alist ~f:(fun (file, ihash_ls) -> 
+        let total = List.length ihash_ls in
         (file, `Assoc [
           ("type", `String file_type);
           ("total", `Int total)]
       )) in
 
-    let needle_files = file_object needles_fingerprint_tbl "needle" in
-    let haystack_files = file_object haystack_fingeprint_tbl "haystack" in
+    let needle_files = file_object needles_tbl "needle" in
+    let haystack_files = file_object haystack_tbl "haystack" in
 
     let output = `Assoc [
       ("config", `Assoc [
@@ -214,17 +220,17 @@ let hash_match_table_print needles_tb hm_tbl =
 
 let handle_io ~json_filename:json_filename 
               ~analsysi_info:info
-              ~needles_fingerprint_tbl:needles_fingerprint_tbl 
-              ~haystack_fingerprint_tbl:haystack_fingerprint_tbl 
+              ~needles_tbl:needles_tbl 
+              ~haystack_tbl:haystack_tbl 
               hm_tbl =
   (match json_filename with
    | None -> ()
    | Some json_filename -> hash_match_table_json_file ~json_filename:json_filename 
                                                       ~analysis_info:info
-                                                      ~needles_fingerprint_tbl:needles_fingerprint_tbl 
-                                                      ~haystack_fingerprint_tbl:haystack_fingerprint_tbl 
+                                                      ~needles_tbl:needles_tbl 
+                                                      ~haystack_tbl:haystack_tbl 
                                                       ~hm_tbl:hm_tbl);
-  hash_match_table_print needles_fingerprint_tbl hm_tbl
+  hash_match_table_print needles_tbl hm_tbl
 
 let top_level_dir_name path =
  let up_to_top_level = (Filename.dirname path) in
@@ -246,8 +252,8 @@ let update_keys tbl ~f:f =
 
 
 let analyze 
-  (needles: (string, Winnowing.fingerprint list) Base.Hashtbl.t) 
-  (haystack: (string, Winnowing.fingerprint list) Base.Hashtbl.t) 
+  (needles: (string, Preprocessing.indexed_hash list) Base.Hashtbl.t) 
+  (haystack: (string, Preprocessing.indexed_hash list) Base.Hashtbl.t) 
   (json_filename: string option)
   (info: analysis_info) =
 
@@ -272,5 +278,5 @@ let analyze
     |> hash_matches_to_table 
     |> handle_io ~json_filename:json_filename 
                  ~analsysi_info:info
-                 ~needles_fingerprint_tbl:shortened_needles 
-                 ~haystack_fingerprint_tbl:shortened_haystack 
+                 ~needles_tbl:shortened_needles 
+                 ~haystack_tbl:shortened_haystack 

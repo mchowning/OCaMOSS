@@ -1,7 +1,7 @@
 open OUnit2
 open OCaMossLib
 
-let location_to_string (l: Analysis.locations) = 
+(* let location_to_string (l: Analysis.locations) = 
   "{ " ^ Int.to_string l.needle_index ^ "; " ^ Int.to_string l.haystack_index ^ " }"
 let list_printer l_printer ls =
   let strings = List.map l_printer ls in
@@ -128,9 +128,9 @@ let hash_matches_to_table _ =
         ) sub_tbl1 sub_tbl2
     ) tbl1 tbl2 
     in
-  assert_equal ~cmp:(equality) ~printer:printer expected actual
+  assert_equal ~cmp:(equality) ~printer:printer expected actual *)
 
 let tests = [
-  "matches needles" >:: matches_needles;
-  "haystack matches to table" >:: hash_matches_to_table;
+  (* "matches needles" >:: matches_needles;
+  "haystack matches to table" >:: hash_matches_to_table; *)
 ]

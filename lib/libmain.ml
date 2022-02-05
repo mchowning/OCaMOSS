@@ -41,11 +41,9 @@ let parser guarantee_threshold min_threshold dir_or_file_name =
     match hashed_file with
     | None -> acc
     | Some hashes ->
-      let winnowed_hashes = Winnowing.winnow window_size hashes in
-      (* Hashtbl.add acc file_path winnowed_hashes; *)
-      Base.Hashtbl.add_exn acc ~key:file_path ~data:winnowed_hashes;
-      acc
-  (* end) (Hashtbl.create (List.length files)) files *)
+        let winnowed_hashes = Winnowing.winnow window_size hashes in
+        Base.Hashtbl.add_exn acc ~key:file_path ~data:winnowed_hashes;
+        acc
   end) (Base.Hashtbl.create (module Base.String)) files
 
 let libmain_func () =
