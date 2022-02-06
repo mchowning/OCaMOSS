@@ -127,7 +127,79 @@ let hash_match_table_json_file ~json_filename:json_filename
                                ~needles_tbl:needles_tbl 
                                ~haystack_tbl:haystack_tbl 
                                ~hm_tbl:hm_tbl = 
-  let needles = Base.Hashtbl.to_alist hm_tbl in
+
+  let hm_tbl_combined = Base.Hashtbl.map hm_tbl ~f:(fun haystack_tbl -> 
+    Base.Hashtbl.map haystack_tbl ~f:(fun hm_list -> 
+
+      let adjoining hm1 hm2 =
+        let adjoining_locations (hl1: hashLocation) (hl2: hashLocation) =
+
+          let adjoins_start = 
+            let hl1_start_edge = hl1.start_index - 1 in
+            hl2.start_index <= hl1_start_edge && hl2.end_index >= hl1_start_edge
+          in
+
+          let adjoins_end =
+            let hl1_end_edge = hl1.end_index + 1 in
+            hl2.start_index <= hl1_end_edge && hl2.end_index >= hl1_end_edge
+          in
+
+          (* If either the start or end adjoins, then the locations adjoin *)
+          adjoins_start || adjoins_end
+        in
+
+        (* Only consider adjoining if both the needle and haystack locations adjoin *)
+        adjoining_locations hm1.needle hm2.needle 
+          && adjoining_locations hm1.haystack hm2.haystack
+      in
+
+      let combine hm1 hm2 =
+        if hm1.needle.path != hm2.needle.path then
+          failwith "cannot combine hash matches from different needle files";
+        if hm1.haystack.path != hm2.haystack.path then
+          failwith "cannot combine hash matches from different haystack files";
+        {
+          needle = {
+            path = hm1.needle.path;
+            start_index = Base.Int.min hm1.needle.start_index hm2.needle.start_index;
+            end_index = Base.Int.max hm1.needle.end_index hm2.needle.end_index;
+
+          };
+          haystack = {
+            path = hm1.haystack.path;
+            start_index = Base.Int.min hm1.haystack.start_index hm2.haystack.start_index;
+            end_index = Base.Int.max hm1.haystack.end_index hm2.haystack.end_index;
+          }
+        }
+      in
+
+      let rec combine_overlapping hm_list = 
+        match hm_list with
+        | [] -> []
+        | hm :: [] -> [hm]
+        | (hm1 :: hm2 :: rest) -> 
+              if adjoining hm1 hm2 then
+                let combined = combine hm1 hm2
+                in combine_overlapping (combined :: rest)
+              else 
+                hm1 :: combine_overlapping (hm2 :: rest)
+      in
+
+      let rec process orig_list = 
+        let processed = combine_overlapping orig_list in
+
+        (* If processing changed the list at all, check if there are any new overlaps *)
+        if (List.length orig_list == List.length processed) then
+          orig_list
+        else
+          process processed
+        in
+
+      process hm_list
+    )
+  ) in
+
+  let needles = Base.Hashtbl.to_alist hm_tbl_combined in
   let needles_with_tup = Base.List.map needles ~f:(fun (needle, haystack_tbl) ->
     let haystacks = Base.Hashtbl.to_alist haystack_tbl in
     (needle, haystacks)
