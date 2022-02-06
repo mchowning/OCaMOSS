@@ -358,43 +358,17 @@ let remove_noise_tup comment_info (code_string_tup: index_string) keywords spec_
       input
     end in
     code_string_tup 
-    (* |> print_and_pass "before rm_strings" *)
     (* |> rm_strings *)
-    (* |> print_and_pass "before rm_mult_line_comment" *)
     (* |> rm_mult_line_comment  *)
-    (* |> print_and_pass "before rm_one_line_comment" *)
     (* |> rm_one_line_comment *)
-    (* |> print_and_pass "before split_and_keep_on_spec_chars" *)
     |> split_and_keep_on_spec_chars_tup spec_chars 
-    (* |> print_and_pass "before rem_white_space" *)
     |> List.map rem_white_space_tup
-    (* |> print_and_pass "before flatten" *)
-
     |> List.flatten 
-
-    (* |> print_and_pass "before replace_generics" *)
-
     |> replace_generics_tup keywords spec_chars 
-
-    (* |> print_and_pass "before concat" *)
-
     |> List.flatten
-    (* |> List.flatten *)
-    (* |> flatten_index_strings *)
     (* |> String.concat "" *)
 
 (* Refer to preprocessing.mli for this function's specifications *)
-(* let rec k_grams s n =
-  let s_length = String.length s in
-  let rec helper s index acc =  
-    if index < 0
-    then acc
-    else
-      let gram = String.sub s index n in
-      helper s (index-1) (gram::acc)
-  in
-  helper s (s_length - n) [] *)
-
 let rec k_grams s n =
   let s_length = String.length s in
   let rec helper s index acc =  
@@ -484,11 +458,6 @@ let get_ngrams f n =
     let noise_removed_str =
       remove_noise_tup com_info char_ints keywords spec_chars is_txt in
     let result = k_grams_tup noise_removed_str n in
-
-    (* let noise_removed_str =
-      remove_noise com_info f_string keywords spec_chars is_txt in
-    let result = k_grams noise_removed_str n in *)
-
     Some result
 
 type indexed_hash = {
