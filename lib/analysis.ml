@@ -46,7 +46,21 @@ let convertToHashDict fileHashDict = begin
   result
 end
 
-let find_matches (needles: (string, Preprocessing.indexed_hash list) Base.Hashtbl.t) (haystack: (string, Preprocessing.indexed_hash list) Base.Hashtbl.t) = begin
+let same_extension path1 path2 =
+  let exn1 = Filename.extension path1 in
+  let exn2 = Filename.extension path2 in
+  if (exn1 = exn2) then
+    true
+  else
+    (* FIXME find a more robust way to check this *)
+    let is_javascript a = a = ".js" || a = ".jsx" || a = ".ts" || a = ".tsx" in
+    is_javascript exn1 && is_javascript exn2
+
+
+let find_matches 
+    (needles: (string, Preprocessing.indexed_hash list) Base.Hashtbl.t) 
+    (haystack: (string, Preprocessing.indexed_hash list) Base.Hashtbl.t) 
+  = begin
   let haystackHashDict = convertToHashDict haystack in
   Base.Hashtbl.fold needles ~init:[] ~f:(fun ~key:needle_path ~data:needle_fingerprints acc ->
     let matches = List.concat_map (fun (ihash: Preprocessing.indexed_hash) ->
@@ -57,15 +71,20 @@ let find_matches (needles: (string, Preprocessing.indexed_hash list) Base.Hashtb
 
         (* Record matching hashes in the haystack *)
         | Some ls -> 
-            List.map (fun haystack_location -> 
-              { needle = { path = needle_path; 
-                           start_index = ihash.start_index; 
-                           end_index = ihash.end_index }; 
-                haystack = { path = haystack_location.path; 
-                             start_index = haystack_location.start_index; 
-                             end_index = haystack_location.end_index };
-              }
-            ) ls
+            Base.List.concat_map ls ~f:(fun haystack_location -> 
+              (* Only report match if the file extensions match *)
+              if same_extension needle_path haystack_location.path then
+                [ { needle = { path = needle_path; 
+                            start_index = ihash.start_index; 
+                            end_index = ihash.end_index }; 
+                  haystack = { path = haystack_location.path; 
+                              start_index = haystack_location.start_index; 
+                              end_index = haystack_location.end_index };
+                } ]
+              else
+                []
+            )
+
 
     ) needle_fingerprints in
     acc @ matches
@@ -252,7 +271,7 @@ let hash_match_table_json_file ~json_filename:json_filename
     let output = `Assoc [
       ("config", `Assoc [
         ("paths", `Assoc [
-          ("neeedles", `String info.needles_path);
+          ("needles", `String info.needles_path);
           ("haystack", `String info.haystack_path)
         ]);
         ("thresholds", `Assoc [
