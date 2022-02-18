@@ -63,22 +63,23 @@ type fingerprint = {
 
 (* size = window size
    hs = hashes list *)
-let winnow size (hs: Preprocessing.indexed_hash list) =
-  let hs_length = List.length hs in
+let winnow size (h_list: Preprocessing.indexed_hash list) =
+  let hs = Base.Array.of_list h_list in
+  let hs_length = Base.Array.length hs in
 
   (* FIXME have this create fingerprints *)
   (* let hs_indexed' = List.combine hs (Base.List.range 0 hs_length) in
   let hs_indexed = Base.List.map hs_indexed' ~f:(fun (h,l) -> {hash = h; location = l}) in *)
   let mins =
     let min_from_window window = begin
-      List.fold_right (fun (win: Preprocessing.indexed_hash) min_option -> 
+      Base.Array.fold_right window ~init:None ~f:(fun (win: Preprocessing.indexed_hash) min_option -> 
         match min_option with
         | None -> Some win
         | Some prev -> 
             if win.hash < prev.hash
             then Some win
             else Some prev
-      ) window None |> Option.get 
+      ) |> Option.get 
     end in
 
 
@@ -89,7 +90,7 @@ let winnow size (hs: Preprocessing.indexed_hash list) =
       if index + size > hs_length
       then acc
       else
-        let window = Base.List.sub hs ~pos:index ~len:size in
+        let window = Base.Array.sub hs ~pos:index ~len:size in
         let new_min = min_from_window window in
         match mins with
         | [] -> ([new_min], Some (new_min, index))
@@ -99,7 +100,7 @@ let winnow size (hs: Preprocessing.indexed_hash list) =
               if index <= last_location
 
               (* Only have to do a single comparison *)
-              then let ihash = Base.List.nth_exn hs index in
+              then let ihash = Base.Array.get hs index in
                    if ihash.hash < last_ihash.hash
                    then let new_min = ihash in
                         (new_min :: mins, Some (new_min, index))
@@ -119,37 +120,5 @@ let winnow size (hs: Preprocessing.indexed_hash list) =
     winnowed
 
 
-    (* FIXME need to do some kind of indexed fold now that I'm using the file indices instead of the hash indices *)
-
-    (* let (winnowed,_) = List.fold_left (fun acc f -> 
-      let (mins, last_option) = acc in
-      if f.location + size > hs_length
-      then acc
-      else
-        let window = Base.List.sub hs ~pos:f.location ~len:size in
-        let new_min = min_from_window window in
-        match mins with
-        | [] -> ([new_min], Some new_min)
-        |_ -> let last = Option.get last_option in
-              if f.location <= last.location
-
-              (* Only have to do a single comparison *)
-              then if f.hash < last.hash
-                   then let new_min = f in
-                        (new_min :: mins, Some new_min)
-                   else acc
-
-              (* Previous min is no longer in window.
-                 Need to compare all elements in window *)
-              else if new_min.hash == last.hash
-
-                   (* No new minimum if same as last *)
-                   then acc
-
-                   (* Minimum is different, so keep*)
-                   else (new_min :: mins, Some new_min)
-
-      ) ([], None) hs in
-    winnowed *)
   in
   List.rev mins
