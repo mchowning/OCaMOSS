@@ -362,11 +362,22 @@ let remove_noise_tup comment_info (code_string_tup: index_string) keywords spec_
     (* |> rm_mult_line_comment  *)
     (* |> rm_one_line_comment *)
     |> split_and_keep_on_spec_chars_tup spec_chars 
-    |> List.map rem_white_space_tup
-    |> List.flatten 
+    (* |> print_and_pass "after split_and_keep_on_spec_chars_tup" *)
+
+    (* map rem_white_space_tup but with *)
+    |> Base.List.map ~f:rem_white_space_tup
+    (* |> List.fold_left (fun acc m -> rem_white_space_tup m :: acc) [[]]
+    |> List.rev *)
+    (* |> print_and_pass "after rem_white_space_tup" *)
+
+    |> Base.List.concat
+    (* |> print_and_pass "after concat" *)
+
     |> replace_generics_tup keywords spec_chars 
-    |> List.flatten
-    (* |> String.concat "" *)
+    (* |> print_and_pass "after replace_generics_tup" *)
+
+    |> Base.List.concat
+    (* |> print_and_pass "after flatten" *)
 
 (* Refer to preprocessing.mli for this function's specifications *)
 let rec k_grams s n =
@@ -380,7 +391,7 @@ let rec k_grams s n =
   in
   helper s (s_length - n) []
 
-let rec k_grams_tup (is: index_string) n =
+(* let rec k_grams_tup (is: index_string) n =
   let s_length = List.length is in
 
   let rec helper s index acc =  
@@ -388,11 +399,29 @@ let rec k_grams_tup (is: index_string) n =
     then acc
     else
       let gram = Base.List.sub is ~pos:index ~len:n in
-      (* let gram = String.sub s index n in *)
       helper s (index-1) (gram::acc)
   in
 
-  helper is (s_length - n) []
+  helper is (s_length - n) [] *)
+
+let rec k_grams_tup (is: index_string) n =
+
+  (* Using an Array to speed things up *)
+  let isa = Base.Array.of_list is in
+
+  let s_length = Base.Array.length isa in
+
+  let rec helper s index acc =  
+    if index < 0
+    then acc
+    else
+      let gram = Base.Array.sub isa ~pos:index ~len:n in
+
+      (* Convert things back to a list since that is what is used everywhere else. *)
+      helper s (index-1) (Base.Array.to_list gram :: acc)
+  in
+
+  helper isa (s_length - n) []
 
 
 (* [determine_language_file f] returns the string that represents the name of

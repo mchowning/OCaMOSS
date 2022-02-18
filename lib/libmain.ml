@@ -36,6 +36,8 @@ let parser guarantee_threshold min_threshold dir_or_file_name =
 
   List.fold_left (fun acc file_path -> begin
 
+    Printf.printf "Parsing %s\n%!" file_path;
+
     let hashed_file = Preprocessing.hash_file min_threshold file_path in
 
     match hashed_file with
