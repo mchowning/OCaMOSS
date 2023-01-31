@@ -260,7 +260,6 @@ let replace_generics_tup (keywords: string list) spec_chars (istrs: index_string
     Str.string_match (Str.regexp "[0-9]+") str 0
   in
 
-  (* FIXME use fold *)
   Base.List.map istrs ~f:(fun istr ->
       let is_keyword = any_member keywords istr in
       let is_spec_char = match istr with
@@ -361,13 +360,12 @@ let remove_noise_tup comment_info (code_string_tup: index_string) keywords spec_
     (* |> rm_strings *)
     (* |> rm_mult_line_comment  *)
     (* |> rm_one_line_comment *)
+
     |> split_and_keep_on_spec_chars_tup spec_chars 
     (* |> print_and_pass "after split_and_keep_on_spec_chars_tup" *)
 
-    (* map rem_white_space_tup but with *)
+    (* |> rem_white_space_tup *)
     |> Base.List.map ~f:rem_white_space_tup
-    (* |> List.fold_left (fun acc m -> rem_white_space_tup m :: acc) [[]]
-    |> List.rev *)
     (* |> print_and_pass "after rem_white_space_tup" *)
 
     |> Base.List.concat
